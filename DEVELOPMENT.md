@@ -35,6 +35,15 @@ python -m pytest -q ../tests
 
 每次修改后都应运行测试并实际启动程序，确认首页和管理页面可以打开。
 
+打包完成后运行成品启动检查：
+
+```bash
+cd attendance
+python smoke_test_release.py
+```
+
+它会在临时空目录中启动打包成品，检查主要页面、空数据库和空邮件配置，然后关闭程序。GitHub 在四种系统上全部通过这项检查后，才会压缩或发布文件。
+
 ## 打包
 
 推送普通代码不会自动打包。创建版本标签后，GitHub 会分别生成 Windows、macOS 和 Linux 程序。
