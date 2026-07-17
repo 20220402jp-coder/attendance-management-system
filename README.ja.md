@@ -40,6 +40,4 @@ chmod +x AttendanceSystem-*-Linux-*
 
 Pythonなど、ほかのソフトをインストールする必要はありません。
 
----
-
-開発方法や技術情報は、[中国語版の説明](README.md)の下部にあります。
+<h2>📖 <a href="USER_GUIDE.ja.md">詳しい使用説明を開く</a></h2>
