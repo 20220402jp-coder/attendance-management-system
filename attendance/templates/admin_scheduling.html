@@ -73,18 +73,18 @@
 
 {% block content %}
 <div class="sched-admin-page">
-    <h1>📅 自动排班</h1>
-    <p class="sched-subtitle">{{ first_day.year }}年{{ first_day.month }}月</p>
+    <h1>📅 {{ _('schedule.title') }}</h1>
+    <p class="sched-subtitle">{{ first_day.strftime('%Y-%m') }}</p>
     <div class="sched-controls">
-        <label>最少在岗:</label>
+        <label>{{ _('schedule.min_staff') }}:</label>
         <input type="number" id="default-min" value="5" min="1" max="7">
-        <button class="btn btn-primary" onclick="runSchedule()">⚡ 自动排班</button>
+        <button class="btn btn-primary" onclick="runSchedule()">⚡ {{ _('schedule.run') }}</button>
     </div>
     <div class="req-calendar-wrap">
-        <div class="req-calendar-header">📌 每日人数（点日期调 1~7）</div>
+        <div class="req-calendar-header">📌 {{ _('schedule.daily_staff') }}</div>
         <div class="req-grid" id="req-grid"></div>
     </div>
-    <div id="result-area"><p id="progress-area">加载中...</p></div>
+    <div id="result-area"><p id="progress-area">{{ _('admin.loading') }}</p></div>
 </div>
 
 <script>
@@ -113,7 +113,7 @@ function drawCal() {
     let b = fom.getDay() === 0 ? 6 : fom.getDay() - 1;
     const dim = new Date(s.getFullYear(), s.getMonth() + 1, 0).getDate();
     let h = '';
-    for (const w of ['一','二','三','四','五','六','日']) h += `<div class="req-day-header">${w}</div>`;
+    for (const w of [0,1,2,3,4,5,6].map(i => tr('admin.day_' + i))) h += `<div class="req-day-header">${w}</div>`;
     for (let i = 0; i < b; i++) h += '<div class="req-day off-month"></div>';
     for (let d = 1; d <= dim; d++) {
         const ds = `${s.getFullYear()}-${String(s.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
@@ -123,7 +123,7 @@ function drawCal() {
         if (conflictDates[ds]) cls += ' short';
         if (ds in dayReqs) cls += ' override';
         const rv = ds in dayReqs ? dayReqs[ds] : v;
-        h += `<div class="${cls}" onclick="cDay('${ds}')">${d}<br><small>${rv}人</small></div>`;
+        h += `<div class="${cls}" onclick="cDay('${ds}')">${d}<br><small>${rv} ${tr('schedule.people')}</small></div>`;
     }
     const tr = (7 - ((b + dim) % 7)) % 7;
     for (let i = 0; i < tr; i++) h += '<div class="req-day off-month"></div>';
@@ -140,7 +140,7 @@ function cDay(ds) {
 // ── Schedule ──────────────────────────────────────────
 
 function runSchedule() {
-    document.getElementById('result-area').innerHTML = '<p id="progress-area">⏳ 计算中...</p>';
+    document.getElementById('result-area').innerHTML = '<p id="progress-area">⏳ ' + tr('schedule.calculating') + '</p>';
     const v = dflt();
     const spec = {};
     for (const [k, val] of Object.entries(dayReqs)) if (val !== v) spec[k] = val;
@@ -184,7 +184,7 @@ function cnt(ds) {
 function render(sched, grid) {
     if (!grid) grid = gridData;
     if (!grid || !grid.employees) {
-        document.getElementById('result-area').innerHTML = '<p id="progress-area">暂无数据</p>';
+        document.getElementById('result-area').innerHTML = '<p id="progress-area">' + tr('schedule.no_data') + '</p>';
         return;
     }
     gridData = grid;
@@ -204,16 +204,16 @@ function render(sched, grid) {
     if (sched && sched.stats) {
         const st = sched.stats;
         html += '<div class="stats-summary">';
-        html += `<span class="stat-badge stat-good">📊 ${st.total_days} 天</span>`;
+        html += `<span class="stat-badge stat-good">📊 ${st.total_days} ${tr('schedule.days')}</span>`;
         html += st.days_short > 0
-            ? `<span class="stat-badge stat-bad">⚠️ ${st.days_short} 天缺人 (${st.total_shortage} 人次)</span>`
-            : `<span class="stat-badge stat-good">✅ 全部满足</span>`;
+            ? `<span class="stat-badge stat-bad">⚠️ ${st.days_short} ${tr('schedule.shortage')} (${st.total_shortage} ${tr('schedule.person_times')})</span>`
+            : `<span class="stat-badge stat-good">✅ ${tr('schedule.all_met')}</span>`;
         html += '</div>';
         if (sched.conflicts && sched.conflicts.length > 0) {
             for (const c of sched.conflicts) {
-                html += `<div class="conflict-card"><h4>${c.date} 周${c.weekday} — ${c.assigned}/${c.needed} 人</h4>`;
+                html += `<div class="conflict-card"><h4>${c.date} ${c.weekday} — ${c.assigned}/${c.needed} ${tr('schedule.people')}</h4>`;
                 if (c.available_off && c.available_off.length)
-                    html += `<p>💡 想休息可协调：${c.available_off.join('、')}</p>`;
+                    html += `<p>💡 ${tr('schedule.off_suggestion')}：${c.available_off.join(', ')}</p>`;
                 html += '</div>';
             }
         }
@@ -221,22 +221,22 @@ function render(sched, grid) {
 
     const chg = Object.keys(pending).length;
     html += '<div class="result-wrap"><div class="result-toolbar">';
-    html += '<span style="flex:1;font-weight:600;">📋 排班总表</span>';
-    html += `<span>${chg ? '🖊️ '+chg+' 处' : ''}</span>`;
-    html += `<button class="btn btn-primary" onclick="save()" id="b-save" style="display:none">💾 保存</button>`;
-    html += `<button class="btn btn-cancel" onclick="undo()" id="b-undo" style="display:none">↩ 撤销</button>`;
-    html += `<button id="b-lock" class="btn btn-warning" onclick="unlock()">🔓 解锁修改</button>`;
+    html += '<span style="flex:1;font-weight:600;">📋 ' + tr('schedule.table') + '</span>';
+    html += `<span>${chg ? '🖊️ '+chg+' '+tr('schedule.changes') : ''}</span>`;
+    html += `<button class="btn btn-primary" onclick="save()" id="b-save" style="display:none">💾 ${tr('schedule.save')}</button>`;
+    html += `<button class="btn btn-cancel" onclick="undo()" id="b-undo" style="display:none">↩ ${tr('schedule.undo')}</button>`;
+    html += `<button id="b-lock" class="btn btn-warning" onclick="unlock()">🔓 ${tr('schedule.unlock')}</button>`;
     html += `<button class="btn btn-secondary" onclick="exportExcel()" style="margin-left:8px;">📊 Excel</button>`;
     html += `<button class="btn btn-secondary" onclick="exportPDF()" style="margin-left:4px;">📄 PDF</button>`;
     html += '</div>';
 
-    html += '<div class="result-table-wrap"><table class="result-table" id="schedule-table"><thead><tr><th>姓名</th><th>身份</th>';
+    html += '<div class="result-table-wrap"><table class="result-table" id="schedule-table"><thead><tr><th>' + tr('admin.name') + '</th><th>' + tr('admin.role') + '</th>';
     for (const ds of days) {
         const localDay = _localDate(ds);
-        const wd = ['一','二','三','四','五','六','日'][localDay.getDay() === 0 ? 6 : localDay.getDay() - 1];
+        const wd = tr('admin.day_' + (localDay.getDay() === 0 ? 6 : localDay.getDay() - 1));
         html += `<th>${localDay.getDate()}<br><small>${wd}</small></th>`;
     }
-    html += '<th>出勤</th></tr></thead><tbody>';
+    html += '<th>' + tr('schedule.attendance') + '</th></tr></thead><tbody>';
 
     html += '<tr><td><strong>👥</strong></td>';
     let tw = 0;
@@ -260,9 +260,9 @@ function render(sched, grid) {
             html += `<td class="sched-cell ${w?'working':'off-day'}${ch?' changed':''}"
                 draggable="${!locked}" ondragstart="dsStart(event,'${emp.employee_id}','${ds}')"
                 ondragover="dsOver(event)" ondrop="dsDrop(event,'${emp.employee_id}','${ds}')"
-                ondragend="dsEnd(event)" data-ds="${ds}">${w?'出':'休'}</td>`;
+                ondragend="dsEnd(event)" data-ds="${ds}">${w?tr('admin.work_short'):tr('admin.off_short')}</td>`;
         }
-        html += `<td>${wc}天</td></tr>`;
+        html += `<td>${wc} ${tr('schedule.days')}</td></tr>`;
     }
     html += '</tbody></table></div></div>';
     document.getElementById('result-area').innerHTML = html;
@@ -345,7 +345,7 @@ function exportExcel() {
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    a.download = '排班表.csv';
+    a.download = 'AttendanceSchedule.csv';
     a.click();
     URL.revokeObjectURL(url);
 }
@@ -356,14 +356,14 @@ function exportPDF() {
     var clone = table.cloneNode(true);
     clone.querySelectorAll('[draggable]').forEach(function(el) { el.removeAttribute('draggable'); });
     var w = window.open('', '_blank', 'width=1200,height=800');
-    w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>排班表</title><style>');
+    w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + tr('schedule.table') + '</title><style>');
     w.document.write('body{font-family:sans-serif;padding:20px;}');
     w.document.write('h1{font-size:18px;margin-bottom:12px;}');
     w.document.write('table{border-collapse:collapse;width:100%;font-size:11px;}');
     w.document.write('th,td{border:1px solid #ccc;padding:3px 5px;text-align:center;}');
     w.document.write('th{background:#f0f4f8;font-weight:600;}');
     w.document.write('</style></head><body>');
-    w.document.write('<h1>📋 排班总表</h1>');
+    w.document.write('<h1>📋 ' + tr('schedule.table') + '</h1>');
     w.document.write(clone.outerHTML);
     w.document.write('</body></html>');
     w.document.close();
@@ -409,9 +409,9 @@ function load() {
             const has = data.employees.some(e => e.days.some(d => d.working !== undefined));
             if (has) { gridData = data; locked = true; render(null, data); return; }
         }
-        document.getElementById('result-area').innerHTML = '<p id="progress-area">点击「自动排班」开始</p>';
+        document.getElementById('result-area').innerHTML = '<p id="progress-area">' + tr('schedule.click_start') + '</p>';
     })
-    .catch(() => document.getElementById('result-area').innerHTML = '<p id="progress-area">点击「自动排班」开始</p>');
+    .catch(() => document.getElementById('result-area').innerHTML = '<p id="progress-area">' + tr('schedule.click_start') + '</p>');
 }
 
 document.addEventListener('DOMContentLoaded', () => { drawCal(); load(); });

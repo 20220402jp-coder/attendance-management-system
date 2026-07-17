@@ -94,18 +94,18 @@
 
 {% block content %}
 <div class="att-page">
-    <h1 style="margin-bottom:8px;">📝 打卡记录修正</h1>
+    <h1 style="margin-bottom:8px;">📝 {{ _('attendance.title') }}</h1>
     <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:20px;">
-        选择员工和日期，手动补签或修改签到/签退时间。
+        {{ _('attendance.description') }}
     </p>
 
     <div class="att-card">
-        <h2>✏️ 修改打卡记录</h2>
+        <h2>✏️ {{ _('attendance.edit') }}</h2>
 
         <div class="form-group">
-            <label>员工</label>
+            <label>{{ _('attendance.employee') }}</label>
             <select id="sel-emp">
-                <option value="">— 请选择 —</option>
+                <option value="">— {{ _('attendance.select') }} —</option>
                 {% for emp in employees %}
                 <option value="{{ emp.employee_id }}">{{ emp.name }} · {{ emp.department }}</option>
                 {% endfor %}
@@ -113,32 +113,32 @@
         </div>
 
         <div class="form-group">
-            <label>日期</label>
+            <label>{{ _('attendance.date') }}</label>
             <input type="date" id="sel-date">
         </div>
 
-        <button class="btn btn-primary" onclick="onFieldChange()" style="width:100%;justify-content:center;margin-bottom:16px;">🔍 查询</button>
+        <button class="btn btn-primary" onclick="onFieldChange()" style="width:100%;justify-content:center;margin-bottom:16px;">🔍 {{ _('attendance.query') }}</button>
 
         <div class="time-row" id="time-row">
             <div class="form-group">
-                <label>签到时间</label>
+                <label>{{ _('attendance.check_in') }}</label>
                 <input type="time" id="input-ci">
             </div>
             <div class="form-group">
-                <label>签退时间</label>
+                <label>{{ _('attendance.check_out') }}</label>
                 <input type="time" id="input-co">
             </div>
         </div>
 
         <div class="leave-toggle" id="leave-toggle" onclick="toggleLeave(event)">
             <input type="checkbox" id="input-leave">
-            <label>🛌 标记为请假</label>
-            <span class="hint">不计考勤，状态显示「请假」</span>
+            <label>🛌 {{ _('attendance.leave') }}</label>
+            <span class="hint">{{ _('attendance.leave_hint') }}</span>
         </div>
 
         <div id="status-area"></div>
 
-        <button class="save-btn" id="save-btn" onclick="doSave()" disabled>💾 保存</button>
+        <button class="save-btn" id="save-btn" onclick="doSave()" disabled>💾 {{ _('attendance.save') }}</button>
     </div>
 </div>
 
@@ -183,7 +183,7 @@ function onFieldChange() {
         return;
     }
 
-    statusArea.innerHTML = '<div class="att-status loading">⏳ 查询中...</div>';
+    statusArea.innerHTML = '<div class="att-status loading">⏳ ' + tr('attendance.querying') + '</div>';
     saveBtn.disabled = true;
     _currentRecordId = null;
 
@@ -222,27 +222,27 @@ function onFieldChange() {
             }
 
             const statusLabels = {
-                'normal': '正常 ✅',
-                'late': '迟到 ⚠️',
-                'early_leave': '早退 ⚠️',
-                'both': '迟到+早退 ❌',
-                'absent': '缺勤 ❌',
-                'partial': '未签退 ⚠️',
-                'leave': '请假 🛌',
+                'normal': tr('status.normal') + ' ✅',
+                'late': tr('status.late') + ' ⚠️',
+                'early_leave': tr('status.early_leave') + ' ⚠️',
+                'both': tr('status.both') + ' ❌',
+                'absent': tr('status.absent') + ' ❌',
+                'partial': tr('status.partial') + ' ⚠️',
+                'leave': tr('stats.leave') + ' 🛌',
             };
             const st = statusLabels[rec.status] || '—';
-            statusArea.innerHTML = '<div class="att-status info">📋 已有记录 · 状态：<strong>' + st + '</strong></div>';
+            statusArea.innerHTML = '<div class="att-status info">📋 ' + tr('attendance.existing') + '<strong>' + st + '</strong></div>';
         } else {
             // No record — allow creation
             _currentRecordId = null;
             _currentStatus = '';
-            statusArea.innerHTML = '<div class="att-status info">📭 该日无记录，填入时间后保存将自动创建</div>';
+            statusArea.innerHTML = '<div class="att-status info">📭 ' + tr('attendance.empty') + '</div>';
         }
 
         saveBtn.disabled = false;
     })
     .catch(err => {
-        statusArea.innerHTML = '<div class="att-status err">❌ 网络错误</div>';
+        statusArea.innerHTML = '<div class="att-status err">❌ ' + tr('attendance.network_error') + '</div>';
     });
 }
 
@@ -257,8 +257,8 @@ function doSave() {
     if (!empId || !date) return;
 
     saveBtn.disabled = true;
-    saveBtn.textContent = '⏳ 保存中...';
-    statusArea.innerHTML = '<div class="att-status loading">⏳ 保存中...</div>';
+    saveBtn.textContent = '⏳ ' + tr('attendance.saving');
+    statusArea.innerHTML = '<div class="att-status loading">⏳ ' + tr('attendance.saving') + '</div>';
 
     const isLeave = document.getElementById('input-leave').checked;
 
@@ -276,20 +276,20 @@ function doSave() {
     .then(r => r.json())
     .then(data => {
         if (data.ok) {
-            statusArea.innerHTML = '<div class="att-status ok">✅ 已保存！状态已重新计算</div>';
-            saveBtn.textContent = '💾 保存';
+            statusArea.innerHTML = '<div class="att-status ok">✅ ' + tr('attendance.saved') + '</div>';
+            saveBtn.textContent = '💾 ' + tr('attendance.save');
             saveBtn.disabled = false;
             // Reload to refresh status
             setTimeout(onFieldChange, 500);
         } else {
             statusArea.innerHTML = '<div class="att-status err">❌ ' + data.msg + '</div>';
-            saveBtn.textContent = '💾 保存';
+            saveBtn.textContent = '💾 ' + tr('attendance.save');
             saveBtn.disabled = false;
         }
     })
     .catch(err => {
-        statusArea.innerHTML = '<div class="att-status err">❌ 网络错误</div>';
-        saveBtn.textContent = '💾 保存';
+        statusArea.innerHTML = '<div class="att-status err">❌ ' + tr('attendance.network_error') + '</div>';
+        saveBtn.textContent = '💾 ' + tr('attendance.save');
         saveBtn.disabled = false;
     });
 }

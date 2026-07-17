@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ _('app.title') }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        window.TRANSLATIONS = {{ translations|tojson }};
+        window.tr = key => window.TRANSLATIONS[key] || key;
+    </script>
     {% block head %}{% endblock %}
 </head>
 <body class="{{ body_class }}">
@@ -12,15 +16,20 @@
         <div class="nav-inner">
             <div class="nav-links" style="margin:0 auto;">
                 {% if is_admin %}
-                <a href="/admin/" class="nav-link">⚙️ 管理后台</a>
-                <a href="/admin/employees" class="nav-link">👥 员工</a>
-                <a href="/admin/schedule" class="nav-link">📅 排班</a>
-                <a href="/admin/stats" class="nav-link">📊 统计</a>
-                <a href="/admin/settings" class="nav-link">📧 邮件</a>
-                <a href="/" class="nav-link" style="color:var(--text-secondary);">← 返回打卡</a>
+                <a href="/admin/" class="nav-link">⚙️ {{ _('nav.admin_home') }}</a>
+                <a href="/admin/employees" class="nav-link">👥 {{ _('nav.employees') }}</a>
+                <a href="/admin/schedule" class="nav-link">📅 {{ _('nav.schedule') }}</a>
+                <a href="/admin/stats" class="nav-link">📊 {{ _('nav.stats') }}</a>
+                <a href="/admin/settings" class="nav-link">📧 {{ _('nav.email') }}</a>
+                <a href="/" class="nav-link" style="color:var(--text-secondary);">← {{ _('nav.back_clock') }}</a>
+                <span class="nav-language" aria-label="{{ _('admin.lang') }}">
+                    {% for code, label in langs %}
+                    <a href="/set_lang/{{ code }}" class="nav-lang-link{% if code == current_lang %} active{% endif %}">{{ label }}</a>
+                    {% endfor %}
+                </span>
                 {% else %}
                 <a href="/" class="nav-link">{{ _('nav.clock') }}</a>
-                <a href="/schedule/" class="nav-link">📅 报班</a>
+                <a href="/schedule/" class="nav-link">📅 {{ _('nav.preferences') }}</a>
                 {% endif %}
             </div>
         </div>

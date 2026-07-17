@@ -204,6 +204,7 @@ def inject_globals():
     t = load_translations(lang)
     return {
         '_': lambda key, **kw: t.get(key, key).format(**kw) if kw else t.get(key, key),
+        'translations': t,
         'current_lang': lang,
         'langs': [('zh', '中文'), ('en', 'English'), ('ja', '日本語')],
         'now': datetime.now(),

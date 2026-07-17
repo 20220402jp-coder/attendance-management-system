@@ -64,26 +64,26 @@
 {% endblock %}
 {% block content %}
 <div style="max-width:500px;margin:60px auto;">
-    <h1 style="margin-bottom:24px;">⚙️ 管理后台</h1>
+    <h1 style="margin-bottom:24px;">⚙️ {{ _('dashboard.title') }}</h1>
     <div style="display:flex;flex-direction:column;gap:12px;">
         <a href="/admin/employees" class="btn btn-primary" style="padding:16px 24px;font-size:1.1rem;justify-content:center;">
-            👥 员工管理
+            👥 {{ _('dashboard.employees') }}
         </a>
         <a href="/admin/schedule" class="btn btn-primary" style="padding:16px 24px;font-size:1.1rem;justify-content:center;">
-            📅 自动排班
+            📅 {{ _('dashboard.schedule') }}
         </a>
         <a href="/admin/stats" class="btn btn-primary" style="padding:16px 24px;font-size:1.1rem;justify-content:center;">
-            📊 统计报表
+            📊 {{ _('dashboard.stats') }}
         </a>
         <a href="/admin/attendance" class="btn btn-primary" style="padding:16px 24px;font-size:1.1rem;justify-content:center;">
-            📝 打卡修正
+            📝 {{ _('dashboard.attendance') }}
         </a>
         <button class="btn btn-primary" onclick="showQR()" style="padding:16px 24px;font-size:1.1rem;cursor:pointer;border:none;border-radius:var(--radius);font-family:inherit;font-weight:600;justify-content:center;">
-            📱 打卡二维码
+            📱 {{ _('dashboard.qrcode') }}
         </button>
     </div>
     <p style="text-align:center;margin-top:32px;color:var(--text-secondary);font-size:0.85rem;">
-        管理页面通过直接输入 URL 访问
+        {{ _('dashboard.direct_access') }}
     </p>
 </div>
 
@@ -91,14 +91,14 @@
 <div class="qr-modal-overlay" id="qr-overlay" onclick="if(event.target===this)closeQR()">
     <div class="qr-modal-box">
         <button class="qr-modal-close" onclick="closeQR()">&times;</button>
-        <h3>📱 打卡二维码</h3>
-        <div class="qr-modal-url" id="qr-url">检测局域网 IP...</div>
+        <h3>📱 {{ _('dashboard.qrcode') }}</h3>
+        <div class="qr-modal-url" id="qr-url">{{ _('dashboard.detecting_ip') }}</div>
         <div id="qr-svg" style="min-height:200px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);">
             <span class="qr-box" id="qr-box" style="display:none;"></span>
-            <span id="qr-loading">⏳ 加载中...</span>
+            <span id="qr-loading">⏳ {{ _('dashboard.loading') }}</span>
         </div>
-        <button class="btn btn-primary qr-btn" onclick="showQR()">🔄 刷新</button>
-        <a href="/api/qrcode/print" target="_blank" class="qr-download">📥 下载 PDF</a>
+        <button class="btn btn-primary qr-btn" onclick="showQR()">🔄 {{ _('dashboard.refresh') }}</button>
+        <a href="/api/qrcode/print" target="_blank" class="qr-download">📥 {{ _('dashboard.download_pdf') }}</a>
     </div>
 </div>
 
@@ -107,7 +107,7 @@ function showQR() {
     const overlay = document.getElementById('qr-overlay');
     overlay.classList.add('show');
 
-    document.getElementById('qr-url').textContent = '检测局域网 IP...';
+    document.getElementById('qr-url').textContent = tr('dashboard.detecting_ip');
     document.getElementById('qr-box').style.display = 'none';
     document.getElementById('qr-loading').style.display = 'inline';
     document.getElementById('qr-box').innerHTML = '';
@@ -115,14 +115,14 @@ function showQR() {
     fetch('/api/server-info')
         .then(r => r.json())
         .then(info => {
-            if (!info.ok) throw new Error(info.msg || '获取失败');
+            if (!info.ok) throw new Error(info.msg || tr('dashboard.load_failed'));
             const url = info.url;
             document.getElementById('qr-url').textContent = url;
 
             return fetch('/api/qrcode?url=' + encodeURIComponent(url));
         })
         .then(r => {
-            if (!r.ok) throw new Error('二维码生成失败');
+            if (!r.ok) throw new Error(tr('dashboard.qr_failed'));
             return r.text();
         })
         .then(svg => {

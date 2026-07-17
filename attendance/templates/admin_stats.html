@@ -131,13 +131,13 @@ function renderSummary(data) {
     const el = document.getElementById('stats-summary');
     el.innerHTML = `
         <div class="summary-card">
-            <div class="summary-item"><span class="summary-label">出勤/排班</span><span class="summary-value">${data.working_days} / ${data.scheduled_days || data.working_days}</span></div>
+            <div class="summary-item"><span class="summary-label">${tr('stats.attendance_schedule')}</span><span class="summary-value">${data.working_days} / ${data.scheduled_days || data.working_days}</span></div>
             <div class="summary-item"><span class="summary-label">{{ _('stats.total_hours') }}</span><span class="summary-value">${data.total_hours}h</span></div>
             <div class="summary-item"><span class="summary-label">{{ _('stats.avg_hours') }}</span><span class="summary-value">${data.avg_hours}h</span></div>
             <div class="summary-item"><span class="summary-label">{{ _('stats.late_count') }}</span><span class="summary-value">${data.late_count}</span></div>
             <div class="summary-item"><span class="summary-label">{{ _('stats.early_count') }}</span><span class="summary-value">${data.early_count}</span></div>
             <div class="summary-item"><span class="summary-label">{{ _('stats.absent') }}</span><span class="summary-value">${data.absent_count || 0}</span></div>
-            <div class="summary-item"><span class="summary-label">请假</span><span class="summary-value">${data.leave_count || 0}</span></div>
+            <div class="summary-item"><span class="summary-label">${tr('stats.leave')}</span><span class="summary-value">${data.leave_count || 0}</span></div>
             <div class="summary-item"><span class="summary-label">{{ _('stats.avg_check_in') }}</span><span class="summary-value">${data.avg_check_in}</span></div>
         </div>
     `;
@@ -157,7 +157,7 @@ function renderTable(data) {
         'both': '{{ _('stats.both') }}',
         'absent': '{{ _('stats.absent') }}',
         'partial': '{{ _('stats.partial') }}',
-        'leave': '请假',
+        'leave': tr('stats.leave'),
     };
     const statusColors = {
         'normal': 'status-ok',
@@ -187,7 +187,7 @@ function renderChart(data) {
         'both': '{{ _('stats.both') }}',
         'absent': '{{ _('stats.absent') }}',
         'partial': '{{ _('stats.partial') }}',
-        'leave': '请假',
+        'leave': tr('stats.leave'),
     };
 
     // Hours chart
