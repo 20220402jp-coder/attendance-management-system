@@ -1,20 +1,60 @@
 import os
+import secrets
 import sys
+from pathlib import Path
 
-# 运行模式判断
-#   PyInstaller 打包后: sys._MEIPASS 是解压临时目录，数据文件放那
-#   普通 python app.py: __file__ 就是脚本目录
+# 模板、翻译和静态文件始终跟随程序。
 if getattr(sys, 'frozen', False):
-    BASE_DIR = sys._MEIPASS  # 模板/翻译等数据文件
-    DATA_DIR = os.path.dirname(sys.executable)  # 数据库/运行时文件放 exe 旁边
+    BASE_DIR = str(Path(sys._MEIPASS))
 else:
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    DATA_DIR = BASE_DIR
+    BASE_DIR = str(Path(__file__).resolve().parent)
+
+
+def _user_data_dir():
+    """返回当前操作系统的正式用户数据目录。"""
+    override = os.environ.get('ATTENDANCE_DATA_DIR')
+    if override:
+        path = Path(override).expanduser()
+    elif sys.platform == 'win32':
+        root = os.environ.get('LOCALAPPDATA') or os.environ.get('APPDATA')
+        path = Path(root) / 'AttendanceSystem' if root else Path.home() / 'AppData' / 'Local' / 'AttendanceSystem'
+    elif sys.platform == 'darwin':
+        path = Path.home() / 'Library' / 'Application Support' / 'AttendanceSystem'
+    else:
+        root = os.environ.get('XDG_DATA_HOME')
+        path = Path(root).expanduser() / 'attendance-system' if root else Path.home() / '.local' / 'share' / 'attendance-system'
+
+    path.mkdir(parents=True, exist_ok=True)
+    return path.resolve()
+
+
+def _secret_key(data_dir):
+    """从环境变量读取密钥，或在用户数据目录持久化生成。"""
+    configured = os.environ.get('SECRET_KEY')
+    if configured:
+        return configured
+
+    key_path = data_dir / 'secret_key'
+    if key_path.exists():
+        return key_path.read_text(encoding='utf-8').strip()
+
+    key = secrets.token_urlsafe(48)
+    key_path.write_text(key, encoding='utf-8')
+    try:
+        key_path.chmod(0o600)
+    except OSError:
+        pass
+    return key
+
+
+DATA_PATH = _user_data_dir()
+DATA_DIR = str(DATA_PATH)
+DATABASE_PATH = DATA_PATH / 'attendance.db'
 
 
 class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'change-this-to-a-random-secret')
-    SQLALCHEMY_DATABASE_URI = f'sqlite:///{os.path.join(DATA_DIR, "attendance.db")}'
+    SECRET_KEY = _secret_key(DATA_PATH)
+    SQLALCHEMY_DATABASE_URI = f'sqlite:///{DATABASE_PATH.as_posix()}'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # Lunch break (12:00 - 13:00)

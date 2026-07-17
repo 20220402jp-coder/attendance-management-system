@@ -10,7 +10,6 @@ import smtplib
 import uuid
 import time as time_module
 import threading
-import tarfile
 import queue as queue_module
 from datetime import date, datetime, timedelta
 from functools import lru_cache
@@ -1189,101 +1188,6 @@ def api_schedule_result():
     })
 
 
-@app.route('/api/schedule/simulate', methods=['POST'])
-def api_simulate_preferences():
-    """Simulate employees submitting their preferences for next month."""
-    first_day, last_day = next_month_range()
-    employees = Employee.query.filter_by(is_active=True).all()
-
-    random.seed(42)  # reproducible
-    total_saved = 0
-
-    for emp in employees:
-        is_regular = '全职' in (emp.department or '')
-        current = first_day
-        off_days_this_week = 0
-
-        while current <= last_day:
-            # Determine preference
-            if is_regular:
-                # Regular: pick 2 days off per week, random
-                weekday = current.weekday()
-                # Simple heuristic: pick random one day early-week, one late-week
-                day_of_month = current.day
-                # Seed with employee + date for consistency
-                r = random.Random(f'{emp.id}-{current.isoformat()}')
-                want_off = False
-                if weekday < 5:  # weekday
-                    if off_days_this_week < 2:
-                        # 20% chance of wanting off on any given workday
-                        if r.random() < 0.25:
-                            want_off = True
-                            off_days_this_week += 1
-                elif weekday in (5, 6):
-                    want_off = False  # already off by default
-            else:
-                # Temporary: random preferences
-                r = random.Random(f'{emp.id}-{current.isoformat()}')
-                roll = r.random()
-                if roll < 0.3:
-                    pref = 'want_work'
-                elif roll < 0.5:
-                    pref = 'want_off'
-                else:
-                    pref = 'flexible'
-
-                existing = SchedulePreference.query.filter_by(
-                    employee_id=emp.id, date=current
-                ).first()
-                if not existing:
-                    db.session.add(SchedulePreference(
-                        employee_id=emp.id, date=current, preference=pref
-                    ))
-                    total_saved += 1
-
-            # Reset weekly counter
-            if current.weekday() == 6:  # Sunday
-                off_days_this_week = 0
-
-            current += timedelta(days=1)
-
-        # For regulars: also save their preferences
-        off_days_this_week = 0
-        current = first_day
-        while current <= last_day:
-            weekday = current.weekday()
-            r = random.Random(f'{emp.id}-{current.isoformat()}')
-            existing = SchedulePreference.query.filter_by(
-                employee_id=emp.id, date=current
-            ).first()
-            if not existing:
-                if weekday < 5:
-                    if off_days_this_week < 2:
-                        if r.random() < 0.25:
-                            db.session.add(SchedulePreference(
-                                employee_id=emp.id, date=current, preference='want_off'
-                            ))
-                            off_days_this_week += 1
-                            total_saved += 1
-                        else:
-                            db.session.add(SchedulePreference(
-                                employee_id=emp.id, date=current, preference='want_work'
-                            ))
-                            total_saved += 1
-                    else:
-                        db.session.add(SchedulePreference(
-                            employee_id=emp.id, date=current, preference='want_work'
-                        ))
-                        total_saved += 1
-            if weekday == 6:
-                off_days_this_week = 0
-            current += timedelta(days=1)
-
-    db.session.commit()
-    return jsonify({'ok': True, 'saved': total_saved})
-
-
-
 @app.route('/api/schedule/update', methods=['POST'])
 def api_schedule_update():
     """Manual update to schedule assignments (swap or toggle)."""
@@ -1430,32 +1334,6 @@ def start_late_checker():
     t = threading.Thread(target=loop, daemon=True)
     t.start()
     logger.info('迟到检查已启动，间隔 %s 秒', interval)
-
-
-@app.route('/download')
-def download_package():
-    """Download the project as a tar.gz archive."""
-    import tarfile
-    import io
-    buf = io.BytesIO()
-    with tarfile.open(fileobj=buf, mode='w:gz') as tar:
-        base = BASE_DIR
-        for root, dirs, files in os.walk(base):
-            # Skip venv and pycache
-            dirs[:] = [d for d in dirs if d not in ('venv', '__pycache__')]
-            for f in files:
-                if f.endswith('.pyc'):
-                    continue
-                fpath = os.path.join(root, f)
-                arcname = os.path.relpath(fpath, os.path.dirname(base))
-                tar.add(fpath, arcname=arcname)
-    buf.seek(0)
-    return send_file(
-        buf,
-        mimetype='application/gzip',
-        as_attachment=True,
-        download_name='attendance-full.tar.gz',
-    )
 
 
 def open_browser():

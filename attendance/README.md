@@ -54,10 +54,12 @@ ATTENDANCE_VENV_DIR=/path/to/venv bash start.sh
 
 ### 运行日志
 
-默认日志位于外部环境的 `logs/attendance.log`，例如：
+默认日志位于当前用户的正式数据目录中：
 
 ```text
-~/AI项目外部环境/考勤管理系统/logs/attendance.log
+Windows: %LOCALAPPDATA%\AttendanceSystem\logs\attendance.log
+macOS:   ~/Library/Application Support/AttendanceSystem/logs/attendance.log
+Linux:   ~/.local/share/attendance-system/logs/attendance.log
 ```
 
 日志同时显示在终端，单个文件最大 2MB，最多保留 5 份旧日志。如需指定位置：
@@ -74,12 +76,9 @@ attendance/
 ├── config.py              # 配置
 ├── models.py              # 数据库模型
 ├── init_db.py             # 数据库初始化工具
-├── input_prefs.py         # 模拟员工偏好数据（测试用）
 ├── requirements.txt       # 依赖清单
 ├── start.sh               # 启动脚本
-├── PROGRESS.md            # 项目进度说明
 ├── README.md              # 本文件
-├── attendance.db          # 运行时自动生成，不上传 GitHub
 ├── static/
 │   ├── style.css          # 全局样式
 │   └── chart.umd.min.js   # Chart.js
@@ -304,7 +303,6 @@ settings                # 配置表（键值对）
 | POST | `/api/schedule/auto` | 执行自动排班 |
 | GET | `/api/schedule/result` | 获取排班结果 |
 | POST | `/api/schedule/update` | 手动修改排班 |
-| POST | `/api/schedule/simulate` | 模拟员工偏好（测试用） |
 
 ### 统计/打卡修正
 
@@ -324,7 +322,6 @@ settings                # 配置表（键值对）
 |------|------|------|
 | GET | `/admin/settings` | 邮件配置页面 |
 | GET/POST | `/api/settings` | 读取/保存配置 |
-| POST | `/api/settings/test-email` | 测试邮件发送 |
 
 ---
 
@@ -381,11 +378,19 @@ A: 管理员在「打卡修正」页面填入时间和日期保存即可补签�
 A: 管理员在「打卡修正」页面勾选「🛌 标记为请假」后保存，统计时显示为请假。
 
 **Q: 数据库文件在哪？**
-A: `attendance/attendance.db`。该文件由程序自动创建，Git 会忽略它。
+A: 程序会按操作系统自动保存到当前用户的数据目录：
+
+```text
+Windows: %LOCALAPPDATA%\AttendanceSystem\attendance.db
+macOS:   ~/Library/Application Support/AttendanceSystem/attendance.db
+Linux:   ~/.local/share/attendance-system/attendance.db
+```
+
+数据库不在源码目录内，不会上传 GitHub，更新或替换程序也不会覆盖数据。
 
 **Q: 如何备份？**
 ```bash
-cp ~/attendance/attendance.db ~/backup_$(date +%Y%m%d).db
+cp "$HOME/Library/Application Support/AttendanceSystem/attendance.db" "$HOME/backup_$(date +%Y%m%d).db"
 ```
 
 **Q: 如何重置所有打卡记录但保留员工？**
