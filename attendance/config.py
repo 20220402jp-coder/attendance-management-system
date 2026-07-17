@@ -67,11 +67,3 @@ class Config:
     # Late notification (send email after X minutes past start time)
     LATE_NOTIFY_MINUTES = 10
     LATE_CHECK_INTERVAL = 60  # background check every 60 seconds
-
-    # Email SMTP settings (set via env vars)
-    SMTP_SERVER   = os.environ.get('SMTP_SERVER', '')
-    SMTP_PORT     = int(os.environ.get('SMTP_PORT', '587'))
-    SMTP_USER     = os.environ.get('SMTP_USER', '')
-    SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')
-    ADMIN_EMAIL   = os.environ.get('ADMIN_EMAIL', '')
-    EMAIL_FROM    = os.environ.get('EMAIL_FROM', 'attendance@local')

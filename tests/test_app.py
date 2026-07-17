@@ -12,11 +12,20 @@ def load_app(tmp_path, monkeypatch):
 
 
 def test_new_installation_creates_empty_database(tmp_path, monkeypatch):
+    monkeypatch.setenv('SMTP_SERVER', 'developer.example.com')
+    monkeypatch.setenv('SMTP_PASSWORD', 'developer-secret')
     module = load_app(tmp_path, monkeypatch)
     models = importlib.import_module('models')
     with module.app.app_context():
         assert models.Employee.query.count() == 0
         assert models.AttendanceRecord.query.count() == 0
+        smtp_settings = models.Setting.query.all()
+        assert len(smtp_settings) == len(module.SMTP_SETTING_KEYS)
+        assert all(setting.value == '' for setting in smtp_settings)
+
+    response = module.app.test_client().get('/api/settings')
+    assert response.status_code == 200
+    assert response.get_json() == {key: '' for key in module.SMTP_SETTING_KEYS}
     assert (tmp_path / 'data' / 'attendance.db').is_file()
     assert (tmp_path / 'data' / 'secret_key').is_file()
 

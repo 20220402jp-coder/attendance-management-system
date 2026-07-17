@@ -39,6 +39,16 @@ app = Flask(__name__)
 app.config.from_object(Config)
 db.init_app(app)
 
+SMTP_SETTING_KEYS = (
+    'smtp_server',
+    'smtp_port',
+    'smtp_user',
+    'smtp_password',
+    'admin_email',
+    'email_from',
+    'late_notify_minutes',
+)
+
 
 def first_run_setup():
     """创建空数据库和全部数据表。
@@ -49,6 +59,9 @@ def first_run_setup():
     is_new_database = not os.path.exists(db_path)
     with app.app_context():
         db.create_all()
+        if is_new_database:
+            db.session.add_all(Setting(key=key, value='') for key in SMTP_SETTING_KEYS)
+            db.session.commit()
     run_migrations()
     if is_new_database:
         logger.info('已创建空数据库: %s', db_path)
@@ -500,13 +513,12 @@ def admin_settings():
 def api_settings():
     if request.method == 'POST':
         data = request.get_json()
-        for key, value in data.items():
-            Setting.set(key, str(value))
+        for key in SMTP_SETTING_KEYS:
+            if key in data:
+                Setting.set(key, str(data[key]))
         return jsonify({'ok': True})
     # GET
-    keys = ['smtp_server', 'smtp_port', 'smtp_user', 'smtp_password',
-            'admin_email', 'email_from', 'late_notify_minutes']
-    settings = {k: Setting.get(k) for k in keys}
+    settings = {key: Setting.get(key) for key in SMTP_SETTING_KEYS}
     return jsonify(settings)
 
 
@@ -1265,15 +1277,16 @@ def send_late_email(emp_name, emp_id, department, scheduled_start,
 def check_late_checkins():
     """Background check: find employees who haven't clocked in past their start time + notify delay."""
     with app.app_context():
-        cfg = app.config
-        # Read settings from DB (with env fallback)
-        smtp_server = Setting.get('smtp_server') or cfg.get('SMTP_SERVER', '')
-        smtp_port = int(Setting.get('smtp_port') or cfg.get('SMTP_PORT', '587'))
-        smtp_user = Setting.get('smtp_user') or cfg.get('SMTP_USER', '')
-        smtp_password = Setting.get('smtp_password') or cfg.get('SMTP_PASSWORD', '')
-        admin_email = Setting.get('admin_email') or cfg.get('ADMIN_EMAIL', '')
-        email_from = Setting.get('email_from') or cfg.get('EMAIL_FROM', 'attendance@local')
-        notify_min = int(Setting.get('late_notify_minutes') or cfg.get('LATE_NOTIFY_MINUTES', '10'))
+        smtp_server = Setting.get('smtp_server')
+        admin_email = Setting.get('admin_email')
+        if not smtp_server or not admin_email:
+            return
+
+        smtp_port = int(Setting.get('smtp_port') or '587')
+        smtp_user = Setting.get('smtp_user')
+        smtp_password = Setting.get('smtp_password')
+        email_from = Setting.get('email_from') or smtp_user
+        notify_min = int(Setting.get('late_notify_minutes') or '10')
 
         today_date = date.today()
         now = datetime.now()
