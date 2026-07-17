@@ -1,5 +1,7 @@
 <h1 align="center">📋 考勤打卡系统</h1>
 
+<h2 align="center">中文 ｜ <a href="README.ja.md">日本語</a> ｜ <a href="README.en.md">English</a></h2>
+
 <h1>下载程序</h1>
 
 <h2>🪟 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.0/AttendanceSystem-1.0.0-Windows-x64.exe.zip">Windows 电脑点这里下载</a></h2>
