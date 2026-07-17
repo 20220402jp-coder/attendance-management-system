@@ -12,7 +12,7 @@
 
 <h2>🐧 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.0/AttendanceSystem-1.0.0-Linux-x64.zip">Download for Linux</a></h2>
 
-This attendance and shift management system is made for small businesses outside China. It supports Chinese, English and Japanese.
+This simple attendance and shift management system is made for small businesses. It supports Chinese, English and Japanese.
 
 <h1>How to use it</h1>
 

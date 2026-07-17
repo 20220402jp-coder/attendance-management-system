@@ -12,7 +12,7 @@
 
 <h2>🐧 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.0/AttendanceSystem-1.0.0-Linux-x64.zip">Linux 电脑点这里下载</a></h2>
 
-这是为中国以外的小企业制作的考勤和排班系统，支持中文、英文和日文。
+这是为需要简单考勤和排班工具的小企业制作的系统，支持中文、英文和日文。
 
 <h1>怎么使用</h1>
 

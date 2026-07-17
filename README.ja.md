@@ -12,7 +12,7 @@
 
 <h2>🐧 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.0/AttendanceSystem-1.0.0-Linux-x64.zip">Linuxはこちらからダウンロード</a></h2>
 
-海外の小規模事業者向けに作られた勤怠・シフト管理システムです。中国語、英語、日本語に対応しています。
+シンプルな勤怠・シフト管理を必要とする小規模事業者向けのシステムです。中国語、英語、日本語に対応しています。
 
 <h1>使い方</h1>
 
