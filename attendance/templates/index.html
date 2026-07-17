@@ -258,28 +258,6 @@
 .clock-result .ok { color: var(--success); font-weight: 500; }
 .clock-result .err { color: var(--danger); font-weight: 500; }
 
-/* ── PIN ── */
-.clock-pin {
-    margin-bottom: 16px;
-}
-.clock-pin input {
-    width: 100%;
-    padding: 12px;
-    border: 2px solid var(--border);
-    border-radius: 10px;
-    font-size: clamp(0.85rem, 2.5vw, 1.2rem);
-    text-align: center;
-    letter-spacing: 6px;
-    font-family: inherit;
-}
-.clock-pin input:focus { outline: none; border-color: var(--primary); }
-.clock-pin label {
-    display: block;
-    text-align: left;
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-    margin-bottom: 4px;
-}
 </style>
 {% endblock %}
 
@@ -304,8 +282,7 @@
             <select id="employee-select" onchange="onEmployeeChange()" {% if not employees %}disabled{% endif %}>
                 <option value="">— 选择员工 —</option>
                 {% for emp in employees %}
-                <option value="{{ emp.employee_id }}" data-has-pin="{{ '1' if emp.pin_code else '0' }}"
-                        data-name="{{ emp.name }}" data-dept="{{ emp.department }}">
+                <option value="{{ emp.employee_id }}" data-name="{{ emp.name }}" data-dept="{{ emp.department }}">
                     {{ emp.name }}{% if emp.department %} · {{ emp.department }}{% endif %}
                 </option>
                 {% endfor %}
@@ -315,12 +292,6 @@
         <!-- Name -->
         <div class="clock-name" id="disp-name"></div>
         <div class="clock-dept" id="disp-dept"></div>
-
-        <!-- PIN -->
-        <div class="clock-pin" id="pin-section" style="display:none;">
-            <label>验证码</label>
-            <input type="password" id="pin-input" maxlength="10" placeholder="****">
-        </div>
 
         <!-- Schedule chip -->
         <div id="schedule-chip" style="display:none;"></div>
@@ -381,7 +352,6 @@ function onEmployeeChange() {
     document.getElementById('off-day').style.display = 'none';
     document.getElementById('clock-btn').style.display = 'none';
     document.getElementById('clock-result').innerHTML = '';
-    document.getElementById('pin-section').style.display = 'none';
     document.getElementById('disp-name').textContent = '';
     document.getElementById('disp-dept').textContent = '';
 
@@ -394,10 +364,6 @@ function onEmployeeChange() {
     // Avatar initials
     document.getElementById('disp-name').textContent = name;
     document.getElementById('disp-dept').textContent = dept;
-
-    const hasPin = opt.dataset.hasPin === '1';
-    document.getElementById('pin-section').style.display = hasPin ? 'block' : 'none';
-    if (!hasPin) document.getElementById('pin-input').value = '';
 
     fetch('/api/today/' + currentEid)
         .then(r => r.json())
@@ -492,7 +458,6 @@ function doCheck() {
         }
     }
 
-    const pin = document.getElementById('pin-input').value;
     const action = currentCheckIn ? 'check_out' : 'check_in';
     const btn = document.getElementById('clock-btn');
     btn.disabled = true;
@@ -501,7 +466,7 @@ function doCheck() {
     fetch('/api/check', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({employee_id: currentEid, pin: pin, action: action})
+        body: JSON.stringify({employee_id: currentEid, action: action})
     })
     .then(r => r.json())
     .then(data => {

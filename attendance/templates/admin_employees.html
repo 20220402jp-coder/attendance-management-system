@@ -37,10 +37,6 @@
                 <option value="ja">日本語</option>
             </select>
         </div>
-        <div class="form-row">
-            <label>{{ _('admin.pin') }}</label>
-            <input type="text" id="form-pin" maxlength="10" placeholder="(选填)">
-        </div>
         <div class="form-actions">
             <button class="btn btn-primary" onclick="saveEmployee()">{{ _('admin.save') }}</button>
             <button class="btn btn-cancel" onclick="hideForm()">{{ _('admin.cancel') }}</button>
@@ -71,7 +67,7 @@
                     <td>{{ '✅' if emp.is_active else '❌' }}</td>
                     <td><button class="btn btn-sm" onclick="editSchedule({{ emp.id }}, '{{ emp.employee_id }}')">📅 {{ _('admin.schedule') }}</button></td>
                     <td>
-                        <button class="btn btn-sm" onclick="editEmployee({{ emp.id }}, '{{ emp.employee_id }}', '{{ emp.name }}', '{{ emp.department }}', '{{ emp.lang }}', '{{ emp.pin_code }}')">✏️</button>
+                        <button class="btn btn-sm" onclick="editEmployee({{ emp.id }}, '{{ emp.employee_id }}', '{{ emp.name }}', '{{ emp.department }}', '{{ emp.lang }}')">✏️</button>
                         <button class="btn btn-sm btn-danger" onclick="deleteEmployee({{ emp.id }})">🗑️</button>
                     </td>
                 </tr>
@@ -105,7 +101,6 @@ function showAddForm() {
     document.getElementById('form-name').value = '';
     document.getElementById('form-dept').value = '全职';
     document.getElementById('form-lang').value = 'zh';
-    document.getElementById('form-pin').value = '';
     document.getElementById('form-title').textContent = '{{ _('admin.add_employee') }}';
     document.getElementById('employee-form').style.display = 'block';
 }
@@ -114,14 +109,13 @@ function hideForm() {
     document.getElementById('employee-form').style.display = 'none';
 }
 
-function editEmployee(id, eid, name, dept, lang, pin) {
+function editEmployee(id, eid, name, dept, lang) {
     editingId = id;
     document.getElementById('edit-id').value = id;
     document.getElementById('form-eid').value = eid;
     document.getElementById('form-name').value = name;
     document.getElementById('form-dept').value = dept;
     document.getElementById('form-lang').value = lang || 'zh';
-    document.getElementById('form-pin').value = pin || '';
     document.getElementById('form-title').textContent = '{{ _('admin.edit_employee') }}';
     document.getElementById('employee-form').style.display = 'block';
 }
@@ -143,7 +137,6 @@ function saveEmployee() {
             name: name,
             department: document.getElementById('form-dept').value.trim(),
             lang: document.getElementById('form-lang').value,
-            pin_code: document.getElementById('form-pin').value.trim(),
         })
     }).then(r => r.json()).then(data => {
         if (data.ok) location.reload();

@@ -6,7 +6,6 @@
   "nav.stats": "Stats",
   "home.select_employee": "Select Employee",
   "home.select_employee_hint": "Choose your name",
-  "home.pin": "PIN (4 digits)",
   "home.check_in": "Check In",
   "home.check_out": "Check Out",
   "home.already_checked_in": "Already checked in today",
@@ -18,7 +17,6 @@
   "home.clocked": "Clock time",
   "home.status": "Status",
   "home.error": "Error",
-  "home.invalid_pin": "Invalid PIN",
   "home.no_employees": "No employees have been added yet.",
   "home.add_employee": "Go to employee management",
 
@@ -29,7 +27,6 @@
   "admin.name": "Name",
   "admin.department": "Department",
   "admin.lang": "Language",
-  "admin.pin": "PIN Code",
   "admin.active": "Active",
   "admin.schedule": "Work Schedule",
   "admin.save": "Save",

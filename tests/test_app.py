@@ -35,6 +35,27 @@ def test_removed_development_routes_stay_removed(tmp_path, monkeypatch):
     assert client.get('/download').status_code == 404
 
 
+def test_employee_can_be_added_and_check_in_without_verification_code(tmp_path, monkeypatch):
+    module = load_app(tmp_path, monkeypatch)
+    client = module.app.test_client()
+
+    response = client.post('/api/employee', json={
+        'employee_id': 'E001',
+        'name': '张三',
+        'department': '全职',
+        'lang': 'zh',
+    })
+    assert response.status_code == 200
+    assert response.get_json()['ok'] is True
+
+    response = client.post('/api/check', json={
+        'employee_id': 'E001',
+        'action': 'check_in',
+    })
+    assert response.status_code == 200
+    assert response.get_json()['ok'] is True
+
+
 def test_legacy_database_is_upgraded_without_losing_employees(tmp_path, monkeypatch):
     data_dir = tmp_path / 'data'
     data_dir.mkdir()

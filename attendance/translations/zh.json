@@ -6,7 +6,6 @@
   "nav.stats": "统计",
   "home.select_employee": "选择员工",
   "home.select_employee_hint": "请选择姓名",
-  "home.pin": "验证码(4位)",
   "home.check_in": "签到上班",
   "home.check_out": "签退下班",
   "home.already_checked_in": "今日已签到",
@@ -18,7 +17,6 @@
   "home.clocked": "打卡时间",
   "home.status": "状态",
   "home.error": "错误",
-  "home.invalid_pin": "验证码错误",
   "home.no_employees": "尚未添加员工。",
   "home.add_employee": "前往员工管理",
 
@@ -29,7 +27,6 @@
   "admin.name": "姓名",
   "admin.department": "部门",
   "admin.lang": "语言",
-  "admin.pin": "验证码",
   "admin.active": "启用",
   "admin.schedule": "排班表",
   "admin.save": "保存",

@@ -14,7 +14,6 @@ class Employee(db.Model):
     name         = db.Column(db.String(100), nullable=False)
     department   = db.Column(db.String(100), default='')
     lang         = db.Column(db.String(5), default='zh')
-    pin_code     = db.Column(db.String(10), default='')
     is_active    = db.Column(db.Boolean, default=True)
     rest_days    = db.Column(db.String(20), default='')  # 固定休息日，如 "5,6" 表示周六日
     min_rest_per_week = db.Column(db.Integer, default=2)  # 每周最少休息天数

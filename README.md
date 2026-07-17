@@ -154,7 +154,6 @@ employees               # 员工表
 ├── name                # 姓名
 ├── department          # 部门
 ├── lang                # 语言偏好
-├── pin_code            # 验证码（可选）
 └── is_active           # 是否启用
 
 schedules               # 个人班次表

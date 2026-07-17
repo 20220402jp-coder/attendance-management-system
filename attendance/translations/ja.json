@@ -6,7 +6,6 @@
   "nav.stats": "統計",
   "home.select_employee": "社員を選択",
   "home.select_employee_hint": "名前を選んでください",
-  "home.pin": "暗証番号(4桁)",
   "home.check_in": "出勤打刻",
   "home.check_out": "退勤打刻",
   "home.already_checked_in": "本日は既に出勤打刻済みです",
@@ -18,7 +17,6 @@
   "home.clocked": "打刻時刻",
   "home.status": "状態",
   "home.error": "エラー",
-  "home.invalid_pin": "暗証番号が正しくありません",
   "home.no_employees": "従業員がまだ登録されていません。",
   "home.add_employee": "従業員管理へ",
 
@@ -29,7 +27,6 @@
   "admin.name": "氏名",
   "admin.department": "部署",
   "admin.lang": "言語",
-  "admin.pin": "暗証番号",
   "admin.active": "有効",
   "admin.schedule": "勤務スケジュール",
   "admin.save": "保存",

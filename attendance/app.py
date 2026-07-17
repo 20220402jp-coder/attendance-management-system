@@ -106,15 +106,11 @@ def _process_check(data, lang):
     """Core check-in/out logic (runs in worker thread with app context)."""
     t = load_translations(lang)
     employee_id = data.get('employee_id')
-    pin = data.get('pin', '')
     action = data.get('action', 'check_in')
 
     emp = Employee.query.filter_by(employee_id=employee_id, is_active=True).first()
     if not emp:
         return {'ok': False, 'msg': t['error.employee_not_found'], '_code': 404}
-
-    if emp.pin_code and emp.pin_code != pin:
-        return {'ok': False, 'msg': t['home.invalid_pin'], '_code': 403}
 
     dt_today = today()
     now = now_dt()
@@ -295,7 +291,6 @@ def api_today(employee_id):
         'ok': True,
         'name': emp.name,
         'department': emp.department,
-        'has_pin': bool(emp.pin_code),
         'check_in': record.check_in.strftime('%H:%M:%S') if record and record.check_in else None,
         'check_out': record.check_out.strftime('%H:%M:%S') if record and record.check_out else None,
         'status': record.status if record else None,
@@ -424,7 +419,6 @@ def api_add_employee():
         name=data['name'],
         department=data.get('department', ''),
         lang=data.get('lang', 'zh'),
-        pin_code=data.get('pin_code', ''),
         rest_days=rest_days,
         min_rest_per_week=min_rest,
     )
@@ -450,7 +444,6 @@ def api_update_employee(eid):
     emp.name = data.get('name', emp.name)
     emp.department = data.get('department', emp.department)
     emp.lang = data.get('lang', emp.lang)
-    emp.pin_code = data.get('pin_code', emp.pin_code)
     emp.is_active = data.get('is_active', emp.is_active)
     emp.rest_days = data.get('rest_days', emp.rest_days)
     emp.min_rest_per_week = int(data.get('min_rest_per_week', emp.min_rest_per_week or 0))
