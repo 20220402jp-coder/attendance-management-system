@@ -52,6 +52,20 @@ bash start.sh
 ATTENDANCE_VENV_DIR=/path/to/venv bash start.sh
 ```
 
+### 运行日志
+
+默认日志位于外部环境的 `logs/attendance.log`，例如：
+
+```text
+~/AI项目外部环境/考勤管理系统/logs/attendance.log
+```
+
+日志同时显示在终端，单个文件最大 2MB，最多保留 5 份旧日志。如需指定位置：
+
+```bash
+ATTENDANCE_LOG_DIR=/path/to/logs bash start.sh
+```
+
 ## 项目结构
 
 ```

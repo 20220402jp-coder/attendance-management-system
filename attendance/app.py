@@ -21,12 +21,17 @@ from flask import (Flask, render_template, request, jsonify,
 from dateutil import parser as dtparser
 
 from config import Config, BASE_DIR, DATA_DIR
+from logging_config import setup_logging
 from models import (db, Employee, Schedule, AttendanceRecord,
                     SchedulePreference, ScheduleAssignment, Setting,
                     get_schedule_for_day, compute_working_hours,
                     compute_status)
 
 # ── App factory ───────────────────────────────────────────────────
+
+logger = setup_logging(
+    os.environ.get('ATTENDANCE_LOG_DIR', os.path.join(DATA_DIR, 'logs'))
+)
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -40,13 +45,13 @@ def first_run_setup():
     """
     db_path = os.path.join(DATA_DIR, 'attendance.db')
     is_new_database = not os.path.exists(db_path)
-    db.create_all()
+    with app.app_context():
+        db.create_all()
     if is_new_database:
-        print(f'[启动] 已创建空数据库: {db_path}')
+        logger.info('已创建空数据库: %s', db_path)
 
 
-with app.app_context():
-    first_run_setup()
+first_run_setup()
 
 
 # ── i18n ───────────────────────────────────────────────────────────
@@ -1353,7 +1358,7 @@ def send_late_email(emp_name, emp_id, department, scheduled_start,
             if smtp_user:
                 server.login(smtp_user, smtp_password)
             server.send_message(msg)
-    print(f'[NOTIFY] Email sent to {admin_email}: {emp_name} late')
+    logger.info('已发送迟到通知: %s (%s)', emp_name, emp_id)
 
 
 def check_late_checkins():
@@ -1418,13 +1423,13 @@ def start_late_checker():
         while True:
             try:
                 check_late_checkins()
-            except Exception as e:
-                print(f'[NOTIFY] Check error: {e}')
+            except Exception:
+                logger.exception('迟到检查失败')
             time_module.sleep(interval)
 
     t = threading.Thread(target=loop, daemon=True)
     t.start()
-    print(f'[NOTIFY] Late checker started (every {interval}s)')
+    logger.info('迟到检查已启动，间隔 %s 秒', interval)
 
 
 @app.route('/download')
@@ -1471,9 +1476,9 @@ if __name__ == '__main__':
         open_browser()
     start_late_checker()
     url = f'http://0.0.0.0:5000'
-    print(f'🚀 考勤管理系统已启动')
-    print(f'📎 本机访问: http://127.0.0.1:5000')
-    print(f'📱 手机访问: http://<本机IP>:5000')
-    print(f'⏹  Ctrl+C 停止服务')
+    logger.info('考勤管理系统已启动')
+    logger.info('本机访问: http://127.0.0.1:5000')
+    logger.info('手机访问: http://<本机IP>:5000')
+    logger.info('按 Ctrl+C 停止服务')
     app.config['TEMPLATES_AUTO_RELOAD'] = True
     app.run(host='0.0.0.0', port=5000, debug=False)

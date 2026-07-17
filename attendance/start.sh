@@ -3,6 +3,7 @@
 cd "$(dirname "$0")"
 
 VENV_DIR="${ATTENDANCE_VENV_DIR:-$HOME/AI项目外部环境/考勤管理系统/venv}"
+LOG_DIR="${ATTENDANCE_LOG_DIR:-$(dirname "$VENV_DIR")/logs}"
 
 if [ ! -x "$VENV_DIR/bin/python" ]; then
     echo "📦 首次运行，正在创建外部虚拟环境..."
@@ -13,4 +14,5 @@ fi
 
 echo "🕐 考勤管理系统启动中..."
 export PYTHONDONTWRITEBYTECODE=1
+export ATTENDANCE_LOG_DIR="$LOG_DIR"
 exec "$VENV_DIR/bin/python" app.py
