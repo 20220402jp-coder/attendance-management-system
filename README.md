@@ -4,13 +4,13 @@
 
 <h1>下载程序</h1>
 
-<h2>🪟 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.0/AttendanceSystem-1.0.0-Windows-x64.exe.zip">Windows 电脑点这里下载</a></h2>
+<h2>🪟 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.1/AttendanceSystem-1.0.1-Windows-x64.exe.zip">Windows 电脑点这里下载</a></h2>
 
-<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.0/AttendanceSystem-1.0.0-macOS-arm64.zip">Mac 电脑点这里下载（M1、M2、M3、M4 芯片）</a></h2>
+<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.1/AttendanceSystem-1.0.1-macOS-arm64.zip">Mac 电脑点这里下载（M1、M2、M3、M4 芯片）</a></h2>
 
-<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.0/AttendanceSystem-1.0.0-macOS-x64.zip">Intel 芯片的 Mac 点这里下载</a></h2>
+<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.1/AttendanceSystem-1.0.1-macOS-x64.zip">Intel 芯片的 Mac 点这里下载</a></h2>
 
-<h2>🐧 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.0/AttendanceSystem-1.0.0-Linux-x64.zip">Linux 电脑点这里下载</a></h2>
+<h2>🐧 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.1/AttendanceSystem-1.0.1-Linux-x64.zip">Linux 电脑点这里下载</a></h2>
 
 这是为需要简单考勤和排班工具的小企业制作的系统，支持中文、英文和日文。
 

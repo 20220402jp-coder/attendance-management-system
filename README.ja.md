@@ -4,13 +4,13 @@
 
 <h1>ダウンロード</h1>
 
-<h2>🪟 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.0/AttendanceSystem-1.0.0-Windows-x64.exe.zip">Windowsはこちらからダウンロード</a></h2>
+<h2>🪟 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.1/AttendanceSystem-1.0.1-Windows-x64.exe.zip">Windowsはこちらからダウンロード</a></h2>
 
-<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.0/AttendanceSystem-1.0.0-macOS-arm64.zip">Macはこちらからダウンロード（M1、M2、M3、M4）</a></h2>
+<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.1/AttendanceSystem-1.0.1-macOS-arm64.zip">Macはこちらからダウンロード（M1、M2、M3、M4）</a></h2>
 
-<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.0/AttendanceSystem-1.0.0-macOS-x64.zip">Intel搭載Macはこちらからダウンロード</a></h2>
+<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.1/AttendanceSystem-1.0.1-macOS-x64.zip">Intel搭載Macはこちらからダウンロード</a></h2>
 
-<h2>🐧 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.0/AttendanceSystem-1.0.0-Linux-x64.zip">Linuxはこちらからダウンロード</a></h2>
+<h2>🐧 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.1/AttendanceSystem-1.0.1-Linux-x64.zip">Linuxはこちらからダウンロード</a></h2>
 
 シンプルな勤怠・シフト管理を必要とする小規模事業者向けのシステムです。中国語、英語、日本語に対応しています。
 
