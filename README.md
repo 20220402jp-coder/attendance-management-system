@@ -1,44 +1,47 @@
-# 📋 考勤打卡系统 (Attendance System)
+<h1 align="center">📋 考勤打卡系统</h1>
 
-针对中国以外的小企业专用的签到打卡 + 智能排班系统。支持多语言（中文/English/日本語），
-每个人独立上下班时间，智能排班，统计报表，打卡记录修正，请假管理。
+<h1>下载程序</h1>
 
-## 首先阅读：本软件不做付费代码签名
+<h2>🪟 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.0/AttendanceSystem-1.0.0-Windows-x64.exe.zip">Windows 电脑点这里下载</a></h2>
 
-本项目不购买 Apple Developer 账号或 Windows 代码签名证书。从 GitHub 下载的程序是开源构建产物，系统第一次运行时可能会提醒“未知开发者”。
+<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.0/AttendanceSystem-1.0.0-macOS-arm64.zip">Mac 电脑点这里下载（M1、M2、M3、M4 芯片）</a></h2>
 
-### Windows 的处理方法
+<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.0/AttendanceSystem-1.0.0-macOS-x64.zip">Intel 芯片的 Mac 点这里下载</a></h2>
 
-1. 解压后双击 `AttendanceSystem-...-Windows-x64.exe`。
-2. 如果 SmartScreen 显示“Windows 已保护你的电脑”，点击「更多信息」。
-3. 确认程序来自本项目的 GitHub Releases，再点击「仍要运行」。
+<h2>🐧 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.0/AttendanceSystem-1.0.0-Linux-x64.zip">Linux 电脑点这里下载</a></h2>
 
-### macOS 的处理方法
+这是为中国以外的小企业制作的考勤和排班系统，支持中文、英文和日文。
 
-1. 解压后先右键程序，选择「打开」。
-2. 在弹窗中再点一次「打开」。
-3. 如仍被拦截，打开「系统设置 → 隐私与安全性」，在页面底部点击「仍要打开」。
+<h1>怎么使用</h1>
 
-### Linux 的处理方法
+<h2>1. 下载对应的文件</h2>
 
-解压后如果没有执行权限，在终端运行：
+<h2>2. 把下载的压缩包解压</h2>
+
+<h2>3. 双击里面的程序</h2>
+
+程序启动后会自动打开网页。第一次使用时，请打开「管理 → 员工管理」添加员工。关闭程序窗口即可停止系统。
+
+### Windows 如果出现安全提醒
+
+点击「更多信息」，再点击「仍要运行」。
+
+### Mac 如果无法打开
+
+右键点击程序，选择「打开」。如果仍然被拦截，请到「系统设置 → 隐私与安全性」点击「仍要打开」。
+
+### Linux 如果无法双击运行
 
 ```bash
 chmod +x AttendanceSystem-*-Linux-*
-./AttendanceSystem-*-Linux-*
 ```
 
-只从本项目的 GitHub Releases 下载，不要运行来源不明的转发文件。
-
-## 普通用户：下载、解压、双击
-
-1. 打开 GitHub Releases，下载与电脑系统匹配的文件。
-2. 解压到普通文件夹。
-3. 双击程序，等待浏览器自动打开。
-
-打包版已包含 Python 和全部依赖，用户不需要安装 Python。首次运行会创建空数据库，请进入 `http://127.0.0.1:5000/admin/employees` 添加员工。关闭程序窗口即可停止服务。
+本程序不需要安装 Python 或其他软件。
 
 ---
+
+<details>
+<summary><strong>开发和技术说明（使用程序时不需要看）</strong></summary>
 
 ## 目录
 
@@ -448,3 +451,5 @@ with app.app_context():
     print('Cleared')
 "
 ```
+
+</details>
