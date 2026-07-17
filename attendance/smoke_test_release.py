@@ -13,6 +13,11 @@ import urllib.request
 from pathlib import Path
 
 
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8', errors='backslashreplace')
+    sys.stderr.reconfigure(encoding='utf-8', errors='backslashreplace')
+
+
 BASE_URL = 'http://127.0.0.1:5000'
 STARTUP_TIMEOUT_SECONDS = 90
 EXPECTED_EMPTY_SETTINGS = {
@@ -87,6 +92,8 @@ def stop_process(process):
             capture_output=True,
             check=False,
         )
+        process.wait(timeout=10)
+        time.sleep(1)
     else:
         os.killpg(process.pid, signal.SIGTERM)
         try:
@@ -101,7 +108,10 @@ def stop_process(process):
 
 def main():
     executable = find_executable()
-    with tempfile.TemporaryDirectory(prefix='attendance-release-check-') as temporary:
+    with tempfile.TemporaryDirectory(
+        prefix='attendance-release-check-',
+        ignore_cleanup_errors=True,
+    ) as temporary:
         temporary_path = Path(temporary)
         data_dir = temporary_path / 'data'
         log_dir = temporary_path / 'logs'
@@ -132,7 +142,7 @@ def main():
                 raise RuntimeError(f'邮件配置接口没有返回空配置: {settings}')
 
             check_database(data_dir)
-            print(f'成品启动检查通过: {executable.name}')
+            print(f'Packaged app smoke test passed: {executable.name}')
         except Exception:
             stop_process(process)
             output = process.stdout.read() if process.stdout else ''
