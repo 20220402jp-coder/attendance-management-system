@@ -128,9 +128,9 @@ pyinstaller --onefile --name "考勤管理系统" ^
   ↓
 浏览器自动弹出打卡页面（http://127.0.0.1:5000）
   ↓
-可直接用示例员工（张三 / 田中太郎 / John Smith）体验
+系统创建空数据库
   ↓
-管理员进入 http://127.0.0.1:5000/admin/ 管理
+管理员进入 http://127.0.0.1:5000/admin/employees 添加员工
 ```
 
 ### 运行机制
@@ -146,8 +146,7 @@ pyinstaller --onefile --name "考勤管理系统" ^
 
 ```bash
 cd attendance/
-source venv/bin/activate     # Windows: venv\Scripts\activate
-python app.py
+bash start.sh
 ```
 
 浏览器打开 `http://127.0.0.1:5000`

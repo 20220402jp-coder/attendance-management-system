@@ -19,6 +19,8 @@
   "home.status": "Status",
   "home.error": "Error",
   "home.invalid_pin": "Invalid PIN",
+  "home.no_employees": "No employees have been added yet.",
+  "home.add_employee": "Go to employee management",
 
   "admin.title": "Employee Management",
   "admin.add_employee": "Add Employee",

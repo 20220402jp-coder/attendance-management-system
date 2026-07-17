@@ -32,8 +32,21 @@ app = Flask(__name__)
 app.config.from_object(Config)
 db.init_app(app)
 
-with app.app_context():
+
+def first_run_setup():
+    """创建空数据库和全部数据表。
+
+    该操作可重复执行，不会添加示例员工或改动已有数据。
+    """
+    db_path = os.path.join(DATA_DIR, 'attendance.db')
+    is_new_database = not os.path.exists(db_path)
     db.create_all()
+    if is_new_database:
+        print(f'[启动] 已创建空数据库: {db_path}')
+
+
+with app.app_context():
+    first_run_setup()
 
 
 # ── i18n ───────────────────────────────────────────────────────────
@@ -1438,43 +1451,6 @@ def download_package():
         as_attachment=True,
         download_name='attendance-full.tar.gz',
     )
-
-
-def first_run_setup():
-    """初始化数据库表 + 示例数据（仅在首次运行时）。"""
-    db_path = os.path.join(DATA_DIR, 'attendance.db')
-    if os.path.exists(db_path):
-        return  # 已有数据库，跳过
-
-    print('[启动] 首次运行，初始化数据库...')
-    db.create_all()
-
-    e1 = Employee(employee_id='E001', name='张三', department='技术部', lang='zh')
-    db.session.add(e1)
-    db.session.flush()
-    for dow in range(5):
-        db.session.add(Schedule(employee_id=e1.id, day_of_week=dow, start_time='09:00', end_time='18:00'))
-    for dow in (5,6):
-        db.session.add(Schedule(employee_id=e1.id, day_of_week=dow, start_time='09:00', end_time='18:00', is_off=True))
-
-    e2 = Employee(employee_id='E002', name='田中太郎', department='営業部', lang='ja')
-    db.session.add(e2)
-    db.session.flush()
-    for dow in range(5):
-        db.session.add(Schedule(employee_id=e2.id, day_of_week=dow, start_time='10:00', end_time='19:00'))
-    for dow in (5,6):
-        db.session.add(Schedule(employee_id=e2.id, day_of_week=dow, start_time='10:00', end_time='19:00', is_off=True))
-
-    e3 = Employee(employee_id='E003', name='John Smith', department='Sales', lang='en')
-    db.session.add(e3)
-    db.session.flush()
-    for dow in range(5):
-        db.session.add(Schedule(employee_id=e3.id, day_of_week=dow, start_time='08:30', end_time='17:30'))
-    for dow in (5,6):
-        db.session.add(Schedule(employee_id=e3.id, day_of_week=dow, start_time='08:30', end_time='17:30', is_off=True))
-
-    db.session.commit()
-    print(f'[启动] 数据库已初始化: {db_path}')
 
 
 def open_browser():

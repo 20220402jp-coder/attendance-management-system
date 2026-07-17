@@ -19,6 +19,8 @@
   "home.status": "状态",
   "home.error": "错误",
   "home.invalid_pin": "验证码错误",
+  "home.no_employees": "尚未添加员工。",
+  "home.add_employee": "前往员工管理",
 
   "admin.title": "员工管理",
   "admin.add_employee": "添加员工",

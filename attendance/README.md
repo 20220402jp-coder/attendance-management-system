@@ -35,18 +35,22 @@
 ## 快速启动
 
 ```bash
-# 1. 激活虚拟环境
-cd /home/fu/开发项目/kaoqinguanli-new/attendance
-source venv/bin/activate
+# macOS / Linux
+cd attendance
+bash start.sh
 
-# 2. 启动
-python app.py
-
-# 3. 打开浏览器
+# 打开浏览器
 # http://localhost:5000
 ```
 
-首次运行会自动创建数据库和示例数据（张三、田中太郎、John Smith）。
+`start.sh` 会把虚拟环境创建在项目目录外，并在首次运行时自动安装依赖。
+首次启动会自动创建空数据库和所有数据表，不会加入示例员工。请进入「管理 → 员工管理」添加第一位员工。
+
+如需指定外部虚拟环境位置：
+
+```bash
+ATTENDANCE_VENV_DIR=/path/to/venv bash start.sh
+```
 
 ## 项目结构
 
@@ -61,8 +65,7 @@ attendance/
 ├── start.sh               # 启动脚本
 ├── PROGRESS.md            # 项目进度说明
 ├── README.md              # 本文件
-├── attendance.db          # SQLite 数据库
-├── venv/                  # Python 虚拟环境
+├── attendance.db          # 运行时自动生成，不上传 GitHub
 ├── static/
 │   ├── style.css          # 全局样式
 │   └── chart.umd.min.js   # Chart.js
@@ -364,7 +367,7 @@ A: 管理员在「打卡修正」页面填入时间和日期保存即可补签�
 A: 管理员在「打卡修正」页面勾选「🛌 标记为请假」后保存，统计时显示为请假。
 
 **Q: 数据库文件在哪？**
-A: `attendance/attendance.db`。
+A: `attendance/attendance.db`。该文件由程序自动创建，Git 会忽略它。
 
 **Q: 如何备份？**
 ```bash

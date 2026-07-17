@@ -295,7 +295,13 @@
 
         <!-- Select employee -->
         <div class="clock-select">
-            <select id="employee-select" onchange="onEmployeeChange()">
+            {% if not employees %}
+            <div class="clock-result" style="margin-bottom:12px;">
+                {{ _('home.no_employees') }}
+                <a href="{{ url_for('admin_employees') }}">{{ _('home.add_employee') }}</a>
+            </div>
+            {% endif %}
+            <select id="employee-select" onchange="onEmployeeChange()" {% if not employees %}disabled{% endif %}>
                 <option value="">— 选择员工 —</option>
                 {% for emp in employees %}
                 <option value="{{ emp.employee_id }}" data-has-pin="{{ '1' if emp.pin_code else '0' }}"

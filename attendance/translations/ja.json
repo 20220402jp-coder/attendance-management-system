@@ -19,6 +19,8 @@
   "home.status": "状態",
   "home.error": "エラー",
   "home.invalid_pin": "暗証番号が正しくありません",
+  "home.no_employees": "従業員がまだ登録されていません。",
+  "home.add_employee": "従業員管理へ",
 
   "admin.title": "社員管理",
   "admin.add_employee": "社員追加",
