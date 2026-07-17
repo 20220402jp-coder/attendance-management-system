@@ -195,7 +195,7 @@ function render(sched, grid) {
     function _fmtLocal(d) {
         return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
     }
-    let d = new Date(gFirst);
+    let d = _localDate(gFirst);
     while (d <= gLast) { days.push(_fmtLocal(d)); d.setDate(d.getDate() + 1); }
 
     const v = dflt();
@@ -232,8 +232,9 @@ function render(sched, grid) {
 
     html += '<div class="result-table-wrap"><table class="result-table" id="schedule-table"><thead><tr><th>姓名</th><th>身份</th>';
     for (const ds of days) {
-        const wd = ['一','二','三','四','五','六','日'][new Date(ds).getDay() === 0 ? 6 : new Date(ds).getDay() - 1];
-        html += `<th>${new Date(ds).getDate()}<br><small>${wd}</small></th>`;
+        const localDay = _localDate(ds);
+        const wd = ['一','二','三','四','五','六','日'][localDay.getDay() === 0 ? 6 : localDay.getDay() - 1];
+        html += `<th>${localDay.getDate()}<br><small>${wd}</small></th>`;
     }
     html += '<th>出勤</th></tr></thead><tbody>';
 

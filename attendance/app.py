@@ -10,6 +10,7 @@ import smtplib
 import uuid
 import time as time_module
 import threading
+import urllib.request
 import queue as queue_module
 from datetime import date, datetime, timedelta
 from functools import lru_cache
@@ -20,11 +21,13 @@ from flask import (Flask, render_template, request, jsonify,
 from dateutil import parser as dtparser
 
 from config import Config, BASE_DIR, DATA_DIR
+from database import run_migrations
 from logging_config import setup_logging
 from models import (db, Employee, Schedule, AttendanceRecord,
                     SchedulePreference, ScheduleAssignment, Setting,
                     get_schedule_for_day, compute_working_hours,
                     compute_status)
+from version import APP_NAME, APP_VERSION
 
 # ── App factory ───────────────────────────────────────────────────
 
@@ -46,6 +49,7 @@ def first_run_setup():
     is_new_database = not os.path.exists(db_path)
     with app.app_context():
         db.create_all()
+    run_migrations()
     if is_new_database:
         logger.info('已创建空数据库: %s', db_path)
 
@@ -1347,16 +1351,27 @@ def open_browser():
     threading.Thread(target=_open, daemon=True).start()
 
 
+def existing_instance_is_running():
+    """判断 5000 端口上是否已经运行本系统。"""
+    try:
+        with urllib.request.urlopen('http://127.0.0.1:5000/api/server-info', timeout=1) as response:
+            return response.status == 200
+    except Exception:
+        return False
+
+
 if __name__ == '__main__':
-    first_run_setup()
-    # 非 PyInstaller 打包且是交互式终端时打开浏览器
-    if not getattr(sys, 'frozen', False):
+    if existing_instance_is_running():
+        logger.info('系统已经运行，直接打开浏览器')
         open_browser()
+        raise SystemExit(0)
+
+    from waitress import serve
+
+    open_browser()
     start_late_checker()
-    url = f'http://0.0.0.0:5000'
-    logger.info('考勤管理系统已启动')
+    logger.info('%s %s 已启动', APP_NAME, APP_VERSION)
     logger.info('本机访问: http://127.0.0.1:5000')
     logger.info('手机访问: http://<本机IP>:5000')
-    logger.info('按 Ctrl+C 停止服务')
-    app.config['TEMPLATES_AUTO_RELOAD'] = True
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    logger.info('关闭本程序窗口即可停止服务')
+    serve(app, host='0.0.0.0', port=5000, threads=8)

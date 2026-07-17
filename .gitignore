@@ -3,6 +3,7 @@
 
 # Python cache and local environments
 __pycache__/
+.pytest_cache/
 *.py[cod]
 .venv/
 venv/
@@ -24,4 +25,5 @@ nohup.out
 # Build output
 build/
 dist/
+release/
 *.spec

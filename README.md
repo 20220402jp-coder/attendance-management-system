@@ -3,6 +3,41 @@
 小企业专用的签到打卡 + 智能排班系统。支持多语言（中文/English/日本語），
 每个人独立上下班时间，智能排班，统计报表，打卡记录修正，请假管理。
 
+## 首先阅读：本软件不做付费代码签名
+
+本项目不购买 Apple Developer 账号或 Windows 代码签名证书。从 GitHub 下载的程序是开源构建产物，系统第一次运行时可能会提醒“未知开发者”。
+
+### Windows 的处理方法
+
+1. 解压后双击 `AttendanceSystem-...-Windows-x64.exe`。
+2. 如果 SmartScreen 显示“Windows 已保护你的电脑”，点击「更多信息」。
+3. 确认程序来自本项目的 GitHub Releases，再点击「仍要运行」。
+
+### macOS 的处理方法
+
+1. 解压后先右键程序，选择「打开」。
+2. 在弹窗中再点一次「打开」。
+3. 如仍被拦截，打开「系统设置 → 隐私与安全性」，在页面底部点击「仍要打开」。
+
+### Linux 的处理方法
+
+解压后如果没有执行权限，在终端运行：
+
+```bash
+chmod +x AttendanceSystem-*-Linux-*
+./AttendanceSystem-*-Linux-*
+```
+
+只从本项目的 GitHub Releases 下载，不要运行来源不明的转发文件。
+
+## 普通用户：下载、解压、双击
+
+1. 打开 GitHub Releases，下载与电脑系统匹配的文件。
+2. 解压到普通文件夹。
+3. 双击程序，等待浏览器自动打开。
+
+打包版已包含 Python 和全部依赖，用户不需要安装 Python。首次运行会创建空数据库，请进入 `http://127.0.0.1:5000/admin/employees` 添加员工。关闭程序窗口即可停止服务。
+
 ---
 
 ## 目录
@@ -32,12 +67,16 @@
 | 多语言 | 自定义 JSON 文件 + Flask context processor | 比 Flask-Babel 更轻量 |
 | 排队 | Python queue.Queue + 后台线程 | 处理多人同时打卡并发 |
 
-## 快速启动
+## 开发者：从源码启动
 
 ```bash
 # macOS / Linux
 cd attendance
 bash start.sh
+
+# Windows
+cd attendance
+start.bat
 
 # 打开浏览器
 # http://localhost:5000
@@ -73,12 +112,14 @@ ATTENDANCE_LOG_DIR=/path/to/logs bash start.sh
 ```
 attendance/
 ├── app.py                 # Flask 主程序
+├── database.py            # 数据库升级
 ├── config.py              # 配置
 ├── models.py              # 数据库模型
 ├── init_db.py             # 数据库初始化工具
 ├── requirements.txt       # 依赖清单
-├── start.sh               # 启动脚本
-├── README.md              # 本文件
+├── start.sh               # macOS/Linux 源码启动
+├── start.bat              # Windows 源码启动
+├── build.py               # 跨平台打包入口
 ├── static/
 │   ├── style.css          # 全局样式
 │   └── chart.umd.min.js   # Chart.js

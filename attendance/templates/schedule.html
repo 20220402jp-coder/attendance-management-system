@@ -265,7 +265,7 @@ function renderCalendar(data) {
 }
 
 function toggleDay(dateStr) {
-    const d = new Date(dateStr);
+    const d = _localDate(dateStr);
     const f = _localDate(firstDay);
     const l = _localDate(lastDay);
     if (d < f || d > l) return;

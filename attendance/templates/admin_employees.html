@@ -193,7 +193,8 @@ function renderMonthView(empGrid, gridData) {
     
     document.getElementById('schedule-modal-title').textContent = '📅 ' + empName + ' 排班表（点日期改时间）';
     
-    const start = new Date(gridData.first_day);
+    const startParts = gridData.first_day.split('-').map(Number);
+    const start = new Date(startParts[0], startParts[1] - 1, startParts[2]);
     const firstOfMonth = new Date(start.getFullYear(), start.getMonth(), 1);
     let blanks = firstOfMonth.getDay() === 0 ? 6 : firstOfMonth.getDay() - 1;
     const dim = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
