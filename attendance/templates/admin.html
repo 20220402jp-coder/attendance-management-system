@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block head %}
+<style>
+.qr-modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    display: none; align-items: center; justify-content: center;
+    z-index: 1000;
+}
+.qr-modal-overlay.show { display: flex; }
+.qr-modal-box {
+    background: white; border-radius: 16px; padding: 32px;
+    text-align: center; max-width: 360px; width: 90%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    position: relative;
+}
+.qr-modal-close {
+    position: absolute; top: 12px; right: 16px;
+    font-size: 1.5rem; cursor: pointer; background: none; border: none;
+    color: var(--text-secondary);
+}
+.qr-modal-close:hover { color: var(--text); }
+.qr-modal-box h3 { margin-bottom: 8px; }
+.qr-modal-url {
+    font-size: 0.8rem; color: var(--text-secondary);
+    word-break: break-all; margin-bottom: 16px;
+    background: #f1f5f9; padding: 8px 12px; border-radius: 8px;
+}
+.qr-box { background: white; border-radius: 12px; padding: 16px; display: inline-block; margin: 0 auto; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.qr-box svg { display: block; width: 200px; height: 200px; }
+.qr-hint { font-size: 0.8rem; color: var(--text-secondary); margin-top: 12px; }
+.qr-btn { margin-top: 16px; }
+.qr-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+    padding: 10px 24px;
+    border-radius: 10px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #065f46;
+    background: #d1fae5;
+    border: 2px solid #6ee7b7;
+    transition: all 0.25s ease;
+    cursor: pointer;
+}
+.qr-download:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 6px 20px rgba(16,185,129,0.35);
+    background: #a7f3d0;
+}
+.qr-download:active {
+    transform: scale(0.96);
+}
+@keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(16,185,129,0); }
+}
+.qr-download {
+    animation: pulseGlow 2s ease-in-out infinite;
+}
+</style>
+{% endblock %}
+{% block content %}
+<div style="max-width:500px;margin:60px auto;">
+    <h1 style="margin-bottom:24px;">⚙️ 管理后台</h1>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+        <a href="/admin/employees" class="btn btn-primary" style="padding:16px 24px;font-size:1.1rem;justify-content:center;">
+            👥 员工管理
+        </a>
+        <a href="/admin/schedule" class="btn btn-primary" style="padding:16px 24px;font-size:1.1rem;justify-content:center;">
+            📅 自动排班
+        </a>
+        <a href="/admin/stats" class="btn btn-primary" style="padding:16px 24px;font-size:1.1rem;justify-content:center;">
+            📊 统计报表
+        </a>
+        <a href="/admin/attendance" class="btn btn-primary" style="padding:16px 24px;font-size:1.1rem;justify-content:center;">
+            📝 打卡修正
+        </a>
+        <button class="btn btn-primary" onclick="showQR()" style="padding:16px 24px;font-size:1.1rem;cursor:pointer;border:none;border-radius:var(--radius);font-family:inherit;font-weight:600;justify-content:center;">
+            📱 打卡二维码
+        </button>
+    </div>
+    <p style="text-align:center;margin-top:32px;color:var(--text-secondary);font-size:0.85rem;">
+        管理页面通过直接输入 URL 访问
+    </p>
+</div>
+
+<!-- QR Code Modal -->
+<div class="qr-modal-overlay" id="qr-overlay" onclick="if(event.target===this)closeQR()">
+    <div class="qr-modal-box">
+        <button class="qr-modal-close" onclick="closeQR()">&times;</button>
+        <h3>📱 打卡二维码</h3>
+        <div class="qr-modal-url" id="qr-url">检测局域网 IP...</div>
+        <div id="qr-svg" style="min-height:200px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);">
+            <span class="qr-box" id="qr-box" style="display:none;"></span>
+            <span id="qr-loading">⏳ 加载中...</span>
+        </div>
+        <button class="btn btn-primary qr-btn" onclick="showQR()">🔄 刷新</button>
+        <a href="/api/qrcode/print" target="_blank" class="qr-download">📥 下载 PDF</a>
+    </div>
+</div>
+
+<script>
+function showQR() {
+    const overlay = document.getElementById('qr-overlay');
+    overlay.classList.add('show');
+
+    document.getElementById('qr-url').textContent = '检测局域网 IP...';
+    document.getElementById('qr-box').style.display = 'none';
+    document.getElementById('qr-loading').style.display = 'inline';
+    document.getElementById('qr-box').innerHTML = '';
+
+    fetch('/api/server-info')
+        .then(r => r.json())
+        .then(info => {
+            if (!info.ok) throw new Error(info.msg || '获取失败');
+            const url = info.url;
+            document.getElementById('qr-url').textContent = url;
+
+            return fetch('/api/qrcode?url=' + encodeURIComponent(url));
+        })
+        .then(r => {
+            if (!r.ok) throw new Error('二维码生成失败');
+            return r.text();
+        })
+        .then(svg => {
+            document.getElementById('qr-loading').style.display = 'none';
+            document.getElementById('qr-box').style.display = 'inline-block';
+            document.getElementById('qr-box').innerHTML = svg;
+        })
+        .catch(err => {
+            document.getElementById('qr-loading').style.display = 'none';
+            document.getElementById('qr-box').innerHTML =
+                '<span style="color:var(--danger)">❌ ' + err.message + '</span>';
+        });
+}
+
+function closeQR() {
+    document.getElementById('qr-overlay').classList.remove('show');
+}
+</script>
+{% endblock %}

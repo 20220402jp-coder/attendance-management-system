@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+{% block head %}
+<style>
+.calendar {
+    max-width: 900px;
+    margin: 0 auto;
+}
+.calendar-header {
+    text-align: center;
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--text);
+}
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+}
+.calendar-day-header {
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    padding: 8px 0;
+}
+.calendar-day {
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 6px;
+    min-height: 48px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.85rem;
+}
+.calendar-day:hover { border-color: var(--primary); }
+.calendar-day.off { background: #fef2f2; border-color: #fca5a5; }
+.calendar-day.work { background: #f0fdf4; border-color: #86efac; }
+.calendar-day.flex { background: #fffbeb; border-color: #fcd34d; }
+.calendar-day.other-month { opacity: 0.3; pointer-events: none; }
+.calendar-day .day-num { font-weight: 700; font-size: 1rem; }
+.calendar-day .day-label { font-size: 0.7rem; color: var(--text-secondary); }
+.calendar-day .pref-icon { font-size: 1.2rem; }
+
+.calendar-legend {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    margin: 20px 0;
+    flex-wrap: wrap;
+}
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    transition: all 0.1s;
+}
+.legend-item:hover { border-color: var(--border); }
+.legend-item.active { border-color: var(--primary); }
+.legend-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+}
+.legend-dot.work { background: #86efac; }
+.legend-dot.off { background: #fca5a5; }
+.legend-dot.flex { background: #fcd34d; }
+
+.schedule-employee-select {
+    max-width: 400px;
+    margin: 0 auto 20px;
+}
+.schedule-employee-select select {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    font-size: 1rem;
+    font-family: inherit;
+}
+.schedule-employee-select select:focus { outline: none; border-color: var(--primary); }
+
+.schedule-actions {
+    text-align: center;
+    margin: 20px 0;
+}
+
+
+.schedule-tip {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    margin: 8px 0;
+}
+
+@media (max-width: 480px) {
+    .calendar-day {
+        min-height: 42px;
+        padding: 3px 2px;
+        font-size: 0.7rem;
+        gap: 2px;
+    }
+    .calendar-day .day-num { font-size: 0.8rem; }
+    .calendar-day .pref-icon { font-size: 1rem; }
+    .calendar-grid { gap: 2px; }
+    .calendar-header { font-size: 1rem; margin-bottom: 8px; }
+    .calendar-legend { gap: 6px; margin: 12px 0; }
+    .legend-item { font-size: 0.75rem; padding: 4px 10px; }
+    .legend-dot { width: 12px; height: 12px; }
+    .schedule-actions {
+        position: sticky;
+        bottom: 0;
+        margin: 12px 0;
+        padding: 12px;
+        background: linear-gradient(transparent, var(--card-bg) 40%, var(--card-bg));
+        z-index: 10;
+    }
+    .schedule-actions .btn { width: 100%; justify-content: center; }
+    h1 { font-size: 1.1rem; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="schedule-page">
+    <h1 style="text-align:center;margin-bottom:8px;">📅 智能报班系统</h1>
+    <p class="schedule-tip">点击日历上的日期可以切换状态：上班 / 休息 / 都可以</p>
+
+    <div class="schedule-employee-select">
+        <select id="sched-employee" onchange="loadPreferences()">
+            <option value="">{{ _('home.select_employee_hint') }}</option>
+            {% for emp in employees %}
+            <option value="{{ emp.employee_id }}">{{ emp.name }} ({{ emp.department }})</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="calendar-legend" id="legend">
+        <span class="legend-item" data-pref="want_work" onclick="setMode('want_work')">
+            <span class="legend-dot work"></span> 上班 ✅
+        </span>
+        <span class="legend-item" data-pref="want_off" onclick="setMode('want_off')">
+            <span class="legend-dot off"></span> 休息 ❌
+        </span>
+        <span class="legend-item" data-pref="flexible" onclick="setMode('flexible')">
+            <span class="legend-dot flex"></span> 都可以 ⚪
+        </span>
+    </div>
+
+    <div class="calendar" id="calendar"></div>
+
+    <div class="schedule-actions">
+        <button class="btn btn-primary" onclick="savePreferences()">💾 保存</button>
+        <span id="save-msg" style="margin-left:12px;font-size:0.9rem;"></span>
+    </div>
+</div>
+
+<script>
+function _localDate(str) {
+    var p = str.split('-');
+    return new Date(+p[0], +p[1] - 1, +p[2]);
+}
+
+let currentMode = 'want_work';
+let preferences = {};
+let currentEmployeeId = '';
+const firstDay = '{{ first_day.isoformat() }}';
+const lastDay = '{{ last_day.isoformat() }}';
+
+function setMode(mode) {
+    currentMode = mode;
+    document.querySelectorAll('.legend-item').forEach(el => {
+        el.classList.toggle('active', el.dataset.pref === mode);
+    });
+}
+
+function getDaysInMonth(year, month) {
+    return new Date(year, month, 0).getDate();
+}
+
+function renderCalendar(data) {
+    const first = _localDate(firstDay);
+    const last = _localDate(lastDay);
+    const year = first.getFullYear();
+    const month = first.getMonth() + 1;
+
+    // Find the first day of the week for the first day of the month
+    const firstOfMonth = new Date(year, month - 1, 1);
+    const startDow = firstOfMonth.getDay(); // 0=Sun
+    // Adjust to Monday start: convert from JS Sunday=0 to Monday=0
+    // Actually, our weekday is Monday=0 in Python. JS Sunday=0... let me use getDay() properly
+    const weekdays = ['日','一','二','三','四','五','六'];
+
+    const daysInMonth = getDaysInMonth(year, month);
+    if (preferences) {
+        // Load existing from data
+    }
+
+    let html = '<div class="calendar-header">{{ first_day.year }}年{{ first_day.month }}月</div>';
+    html += '<div class="calendar-grid">';
+    // Weekday headers
+    for (let wd of weekdays) {
+        html += `<div class="calendar-day-header">${wd}</div>`;
+    }
+
+    // Leading blank cells
+    // startDow in JS: 0=Sun. We want Mon first.
+    // Convert JS: Sun=0,Mon=1,...Sat=6
+    // Our grid: Mon first. So blank cells = (startDow + 6) % 7... no
+    // Let's just make the grid start on Mon: align by adjusting
+    // JS: Mon=1,Tue=2,Wed=3,Thu=4,Fri=5,Sat=6,Sun=0
+    let jsStart = startDow; // 0=Sun
+    // For Mon-first grid, we need: if jsStart=0(Sun), blank=6; jsStart=1(Mon), blank=0
+    let blanks = jsStart === 0 ? 6 : jsStart - 1;
+    for (let i = 0; i < blanks; i++) {
+        html += '<div class="calendar-day other-month"></div>';
+    }
+
+    // Days
+    for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const dayOfWeek = new Date(year, month-1, d).getDay(); // 0=Sun
+        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+        // Check if within our range
+        const dObj = new Date(year, month-1, d);
+        const f = _localDate(firstDay);
+        const l = _localDate(lastDay);
+        
+        let pref = preferences[dateStr] || (isWeekend ? 'want_off' : 'flexible');
+        let cls = 'calendar-day';
+        if (dObj < f || dObj > l) cls += ' other-month';
+        if (pref === 'want_off') cls += ' off';
+        else if (pref === 'want_work') cls += ' work';
+        else cls += ' flex';
+
+        const labels = {'want_work': '✅', 'want_off': '❌', 'flexible': '⚪'};
+        html += `<div class="${cls}" onclick="toggleDay('${dateStr}')" id="day-${dateStr}">
+            <span class="day-num">${d}</span>
+            <span class="pref-icon">${labels[pref] || '⚪'}</span>
+        </div>`;
+    }
+
+    // Trailing blanks
+    const totalCells = blanks + daysInMonth;
+    const trail = (7 - (totalCells % 7)) % 7;
+    for (let i = 0; i < trail; i++) {
+        html += '<div class="calendar-day other-month"></div>';
+    }
+
+    html += '</div></div>';
+    document.getElementById('calendar').innerHTML = html;
+
+    // Highlight active legend
+    setMode(currentMode);
+}
+
+function toggleDay(dateStr) {
+    const d = new Date(dateStr);
+    const f = _localDate(firstDay);
+    const l = _localDate(lastDay);
+    if (d < f || d > l) return;
+
+    const current = preferences[dateStr] || 'flexible';
+    const cycle = {'want_work': 'want_off', 'want_off': 'flexible', 'flexible': 'want_work'};
+    preferences[dateStr] = cycle[current];  // 实际循环切换
+    
+    // Re-render to reflect
+    renderCalendar();
+}
+
+function loadPreferences() {
+    const sel = document.getElementById('sched-employee');
+    const empId = sel.value;
+    currentEmployeeId = empId;
+    if (!empId) return;
+
+    fetch('/api/schedule/preferences/' + empId)
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) {
+                preferences = data.preferences || {};
+                renderCalendar();
+            }
+        });
+}
+
+function savePreferences() {
+    if (!currentEmployeeId) return;
+
+    const msg = document.getElementById('save-msg');
+    msg.textContent = '⏳ 保存中...';
+
+    fetch('/api/schedule/preferences', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            employee_id: currentEmployeeId,
+            preferences: preferences,
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.ok) {
+            msg.textContent = '✅ 已保存';
+            setTimeout(() => msg.textContent = '', 3000);
+        } else {
+            msg.textContent = '❌ ' + (data.msg || '保存失败');
+        }
+    })
+    .catch(err => {
+        msg.textContent = '❌ 网络错误';
+    });
+}
+
+// Init: select first employee if only one
+document.addEventListener('DOMContentLoaded', () => {
+    const sel = document.getElementById('sched-employee');
+    if (sel.options.length === 2) { // hint + 1 employee
+        sel.selectedIndex = 1;
+        loadPreferences();
+    }
+});
+</script>
+{% endblock %}

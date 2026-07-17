@@ -1,0 +1,26 @@
+# macOS
+.DS_Store
+
+# Python cache and local environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Local runtime data and logs
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+*.log
+nohup.out
+
+# Local secrets
+.env
+.env.*
+!.env.example
+
+# Build output
+build/
+dist/
+*.spec

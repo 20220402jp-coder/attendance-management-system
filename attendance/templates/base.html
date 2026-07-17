@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="{{ current_lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ _('app.title') }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body class="{{ body_class }}">
+    <nav class="nav">
+        <div class="nav-inner">
+            <div class="nav-links" style="margin:0 auto;">
+                {% if is_admin %}
+                <a href="/admin/" class="nav-link">⚙️ 管理后台</a>
+                <a href="/admin/employees" class="nav-link">👥 员工</a>
+                <a href="/admin/schedule" class="nav-link">📅 排班</a>
+                <a href="/admin/stats" class="nav-link">📊 统计</a>
+                <a href="/admin/settings" class="nav-link">📧 邮件</a>
+                <a href="/" class="nav-link" style="color:var(--text-secondary);">← 返回打卡</a>
+                {% else %}
+                <a href="/" class="nav-link">{{ _('nav.clock') }}</a>
+                <a href="/schedule/" class="nav-link">📅 报班</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <span>{{ _('app.title') }}</span>
+    </footer>
+</body>
+</html>

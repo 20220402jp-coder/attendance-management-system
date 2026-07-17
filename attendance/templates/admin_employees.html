@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="admin-page">
+    <h1>{{ _('admin.title') }}</h1>
+
+    <button class="btn btn-primary" onclick="showAddForm()">➕ {{ _('admin.add_employee') }}</button>
+
+    <div id="employee-form" class="admin-form" style="display:none;">
+        <h3 id="form-title">{{ _('admin.add_employee') }}</h3>
+        <input type="hidden" id="edit-id" value="">
+        <div class="form-row">
+            <label>{{ _('admin.employee_id') }}</label>
+            <input type="text" id="form-eid" required>
+        </div>
+        <div class="form-row">
+            <label>{{ _('admin.name') }}</label>
+            <input type="text" id="form-name" required>
+        </div>
+        <div class="form-row">
+            <label>身份</label>
+            <select id="form-dept">
+                <option value="全职">全职</option>
+                <option value="兼职">兼职</option>
+                <option value="技术部">技术部</option>
+                <option value="销售部">销售部</option>
+                <option value="人事部">人事部</option>
+                <option value="财务部">财务部</option>
+                <option value="管理部">管理部</option>
+                <option value="其他">其他</option>
+            </select>
+        </div>
+        <div class="form-row">
+            <label>{{ _('admin.lang') }}</label>
+            <select id="form-lang">
+                <option value="zh">中文</option>
+                <option value="en">English</option>
+                <option value="ja">日本語</option>
+            </select>
+        </div>
+        <div class="form-row">
+            <label>{{ _('admin.pin') }}</label>
+            <input type="text" id="form-pin" maxlength="10" placeholder="(选填)">
+        </div>
+        <div class="form-actions">
+            <button class="btn btn-primary" onclick="saveEmployee()">{{ _('admin.save') }}</button>
+            <button class="btn btn-cancel" onclick="hideForm()">{{ _('admin.cancel') }}</button>
+        </div>
+    </div>
+
+    <div class="admin-list">
+        {% if employees %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>{{ _('admin.employee_id') }}</th>
+                    <th>{{ _('admin.name') }}</th>
+                    <th>身份</th>
+                    <th>{{ _('admin.lang') }}</th>
+                    <th>{{ _('admin.active') }}</th>
+                    <th>{{ _('admin.schedule') }}</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for emp in employees %}
+                <tr>
+                    <td>{{ emp.employee_id }}</td>
+                    <td>{{ emp.name }}</td>
+                    <td>{{ emp.department }}</td>
+                    <td>{{ emp.lang }}</td>
+                    <td>{{ '✅' if emp.is_active else '❌' }}</td>
+                    <td><button class="btn btn-sm" onclick="editSchedule({{ emp.id }}, '{{ emp.employee_id }}')">📅 {{ _('admin.schedule') }}</button></td>
+                    <td>
+                        <button class="btn btn-sm" onclick="editEmployee({{ emp.id }}, '{{ emp.employee_id }}', '{{ emp.name }}', '{{ emp.department }}', '{{ emp.lang }}', '{{ emp.pin_code }}')">✏️</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteEmployee({{ emp.id }})">🗑️</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty-msg">{{ _('admin.no_employees') }}</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Schedule Modal: clickable month calendar -->
+<div id="schedule-modal" class="modal" style="display:none;">
+    <div class="modal-content" style="max-width:750px;">
+        <span class="modal-close" onclick="closeSchedule()">&times;</span>
+        <h3 id="schedule-modal-title">📅 排班表</h3>
+        <input type="hidden" id="schedule-emp-id" value="">
+        <input type="hidden" id="schedule-emp-eid" value="">
+        <div id="schedule-month-view" style="min-height:200px;text-align:center;padding:12px;color:var(--text-secondary);">加载中...</div>
+    </div>
+</div>
+
+<script>
+let editingId = null;
+
+function showAddForm() {
+    editingId = null;
+    document.getElementById('edit-id').value = '';
+    document.getElementById('form-eid').value = '';
+    document.getElementById('form-name').value = '';
+    document.getElementById('form-dept').value = '全职';
+    document.getElementById('form-lang').value = 'zh';
+    document.getElementById('form-pin').value = '';
+    document.getElementById('form-title').textContent = '{{ _('admin.add_employee') }}';
+    document.getElementById('employee-form').style.display = 'block';
+}
+
+function hideForm() {
+    document.getElementById('employee-form').style.display = 'none';
+}
+
+function editEmployee(id, eid, name, dept, lang, pin) {
+    editingId = id;
+    document.getElementById('edit-id').value = id;
+    document.getElementById('form-eid').value = eid;
+    document.getElementById('form-name').value = name;
+    document.getElementById('form-dept').value = dept;
+    document.getElementById('form-lang').value = lang || 'zh';
+    document.getElementById('form-pin').value = pin || '';
+    document.getElementById('form-title').textContent = '{{ _('admin.edit_employee') }}';
+    document.getElementById('employee-form').style.display = 'block';
+}
+
+function saveEmployee() {
+    const eid = document.getElementById('form-eid').value.trim();
+    const name = document.getElementById('form-name').value.trim();
+    if (!eid || !name) { alert('工号和姓名必填'); return; }
+
+    const id = document.getElementById('edit-id').value;
+    const url = id ? '/api/employee/' + id : '/api/employee';
+    const method = id ? 'PUT' : 'POST';
+
+    fetch(url, {
+        method: method,
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            employee_id: eid,
+            name: name,
+            department: document.getElementById('form-dept').value.trim(),
+            lang: document.getElementById('form-lang').value,
+            pin_code: document.getElementById('form-pin').value.trim(),
+        })
+    }).then(r => r.json()).then(data => {
+        if (data.ok) location.reload();
+    });
+}
+
+function deleteEmployee(id) {
+    if (!confirm('确认删除？')) return;
+    fetch('/api/employee/' + id, {method: 'DELETE'})
+        .then(r => r.json()).then(data => {
+            if (data.ok) location.reload();
+        });
+}
+
+// Schedule: monthly view
+let schedSchedules = []; // per-day-of-week schedules
+let schedEditingDay = -1; // which day is being edited (-1 = none)
+
+function editSchedule(empDbId, empEid) {
+    document.getElementById('schedule-emp-id').value = empDbId;
+    document.getElementById('schedule-emp-eid').value = empEid;
+    document.getElementById('schedule-modal').style.display = 'flex';
+    document.getElementById('schedule-month-view').innerHTML = '⏳ 加载中...';
+    schedEditingDay = -1;
+    
+    Promise.all([
+        fetch('/api/schedule/result').then(r => r.json()),
+        fetch('/api/employee/' + empDbId + '/schedules').then(r => r.json()),
+    ])
+    .then(([grid, scheds]) => {
+        schedSchedules = scheds;
+        if (!grid.ok || !grid.employees) throw new Error('暂无排班数据');
+        const empGrid = grid.employees.find(e => e.employee_id === empEid);
+        if (!empGrid) throw new Error('未找到排班数据');
+        renderMonthView(empGrid, grid);
+    })
+    .catch(err => {
+        console.error('editSchedule error:', err);
+        document.getElementById('schedule-month-view').innerHTML = 
+            '<p style="padding:40px;color:var(--text-secondary);">暂无排班数据<br><small>请先在自动排班中生成</small></p>';
+    });
+}
+
+function renderMonthView(empGrid, gridData) {
+    const empDays = empGrid.days;
+    const empName = empGrid.name;
+    
+    document.getElementById('schedule-modal-title').textContent = '📅 ' + empName + ' 排班表（点日期改时间）';
+    
+    const start = new Date(gridData.first_day);
+    const firstOfMonth = new Date(start.getFullYear(), start.getMonth(), 1);
+    let blanks = firstOfMonth.getDay() === 0 ? 6 : firstOfMonth.getDay() - 1;
+    const dim = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
+    
+    let html = '<div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:8px;">点击日期修改该天班次时间 · 自动排班后覆盖</div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;">';
+    
+    for (const w of ['一','二','三','四','五','六','日']) {
+        html += `<div style="text-align:center;font-size:0.75rem;color:var(--text-secondary);padding:4px 0;">${w}</div>`;
+    }
+    for (let i = 0; i < blanks; i++) {
+        html += '<div></div>';
+    }
+    
+    // Build time map per day-of-week
+    const timeMap = {};
+    for (const s of schedSchedules) {
+        timeMap[s.day_of_week] = s.start_time + '-' + s.end_time;
+    }
+    
+    for (let day = 1; day <= dim; day++) {
+        const ds = `${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const dayData = empDays.find(d => d.date === ds);
+        const working = dayData ? dayData.working : false;
+        const bg = working ? '#d1fae5' : '#fee2e2';
+        const txt = working ? '出' : '休';
+        
+        // Get the time for this day's day-of-week
+        const dow = new Date(start.getFullYear(), start.getMonth(), day).getDay();
+        const jsDow = dow === 0 ? 6 : dow - 1; // convert to Mon=0
+        const timeStr = timeMap[jsDow] || '09:00-18:00';
+        
+        html += `<div style="background:${bg};border-radius:6px;text-align:center;padding:4px;font-size:0.8rem;cursor:pointer;"
+            onclick="editDayTime(${day}, '${ds}', ${dow})" id="cell-${ds}">
+            <div style="font-weight:600;">${day}</div>
+            <div>${txt}</div>
+            <div id="time-${ds}" style="font-size:0.65rem;color:var(--text-secondary);">${timeStr}</div>
+        </div>`;
+    }
+    
+    html += '</div>';
+    html += '<p style="text-align:center;margin:8px 0;font-size:0.8rem;color:var(--text-secondary);">要调整出勤日期请到「自动排班」页面拖拽修改</p>';
+    
+    document.getElementById('schedule-month-view').innerHTML = html;
+}
+
+function editDayTime(day, dateStr, jsDow) {
+    const dow = jsDow === 0 ? 6 : jsDow - 1;
+    const sched = schedSchedules.find(s => s.day_of_week === dow);
+    const curStart = sched ? sched.start_time : '09:00';
+    const curEnd = sched ? sched.end_time : '18:00';
+    const timeEl = document.getElementById('time-' + dateStr);
+    if (!timeEl) return;
+    timeEl.innerHTML = `<input type="time" id="edit-start-${dateStr}" value="${curStart}" style="width:70px;padding:2px;border:1px solid var(--primary);border-radius:4px;font-size:0.7rem;">
+        ~
+        <input type="time" id="edit-end-${dateStr}" value="${curEnd}" style="width:70px;padding:2px;border:1px solid var(--primary);border-radius:4px;font-size:0.7rem;">
+        <button onclick="event.stopPropagation(); saveDayTime(${dow}, '${dateStr}')" style="padding:1px 8px;font-size:0.65rem;border:none;border-radius:4px;background:var(--primary);color:white;cursor:pointer;">✓</button>`;
+    setTimeout(() => {
+        const el = document.getElementById('edit-start-' + dateStr);
+        if (el) el.focus();
+    }, 50);
+}
+
+function saveDayTime(dow, dateStr) {
+    const startVal = document.getElementById('edit-start-' + dateStr);
+    const endVal = document.getElementById('edit-end-' + dateStr);
+    if (!startVal || !endVal) return;
+    const sv = startVal.value, ev = endVal.value;
+    if (!sv || !ev) return;
+    
+    const existing = schedSchedules.find(s => s.day_of_week === dow);
+    if (existing) { existing.start_time = sv; existing.end_time = ev; }
+    else { schedSchedules.push({day_of_week: dow, start_time: sv, end_time: ev, is_off: false}); }
+    
+    const timeEl = document.getElementById('time-' + dateStr);
+    if (timeEl) timeEl.textContent = sv + '-' + ev;
+    
+    const empDbId = document.getElementById('schedule-emp-id').value;
+    fetch('/api/employee/' + empDbId + '/schedules', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({schedules: schedSchedules.map(s => ({
+            day_of_week: s.day_of_week, start_time: s.start_time,
+            end_time: s.end_time, is_off: false,
+        }))}),
+    })
+    .then(r => r.json())
+    .then(data => {
+        const btn = document.querySelector('#cell-' + dateStr + ' button');
+        if (btn) { btn.textContent = '✓'; btn.style.background = 'var(--success)'; }
+        if (!data.ok) console.error('Save failed', data);
+    })
+    .catch(err => console.error('Save error', err));
+}
+
+function closeSchedule() {
+    document.getElementById('schedule-modal').style.display = 'none';
+}
+</script>
+{% endblock %}

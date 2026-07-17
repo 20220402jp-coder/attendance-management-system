@@ -1,0 +1,418 @@
+{% extends "base.html" %}
+{% block head %}
+<style>
+.sched-admin-page h1 { margin-bottom: 4px; }
+.sched-subtitle { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px; }
+.sched-controls {
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+    background: var(--card-bg); border-radius: var(--radius);
+    padding: 16px 20px; margin-bottom: 20px;
+}
+.sched-controls label { font-size: 0.85rem; color: var(--text-secondary); }
+.sched-controls input[type=number] {
+    width: 56px; padding: 8px; border: 2px solid var(--border); border-radius: 8px;
+    text-align: center; font-size: 0.9rem;
+}
+.req-calendar-wrap {
+    background: var(--card-bg); border-radius: var(--radius);
+    padding: 16px 20px; margin-bottom: 20px;
+}
+.req-calendar-header { font-weight: 600; margin-bottom: 12px; }
+.req-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.req-day-header { text-align: center; font-size: 0.75rem; color: var(--text-secondary); padding: 4px 0; }
+.req-day {
+    border: 2px solid var(--border); border-radius: 8px; text-align: center;
+    padding: 8px 4px; cursor: pointer; font-size: 0.85rem;
+}
+.req-day:hover { border-color: var(--primary); }
+.req-day .day-num { font-weight: 600; font-size: 1rem; display: block; }
+.req-day .req-val { font-size: 0.75rem; color: var(--text-secondary); }
+.req-day.override { border-color: var(--primary); background: #eff6ff; }
+.req-day.short { border-color: var(--danger); background: #fef2f2; }
+.req-day.off-month { opacity: 0.2; pointer-events: none; }
+.stats-summary { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.stat-badge { padding: 8px 18px; border-radius: 20px; font-size: 0.9rem; font-weight: 600; }
+.stat-good { background: #d1fae5; color: #065f46; }
+.stat-warn { background: #fef3c7; color: #92400e; }
+.stat-bad { background: #fee2e2; color: #991b1b; }
+.conflict-card {
+    background: var(--card-bg); border-radius: var(--radius);
+    padding: 16px; margin-bottom: 12px;
+    border-left: 4px solid var(--warning);
+}
+.conflict-card h4 { margin-bottom: 6px; }
+.conflict-card p { margin-bottom: 4px; font-size: 0.9rem; }
+.result-wrap { margin-top: 16px; }
+.result-toolbar {
+    display: flex; gap: 12px; align-items: center; margin-bottom: 12px;
+    padding: 12px 16px; background: var(--card-bg); border-radius: var(--radius);
+}
+.result-table-wrap { overflow-x: auto; }
+.result-table {
+    border-collapse: collapse; font-size: 0.75rem; min-width: 100%;
+    background: var(--card-bg); border-radius: var(--radius); overflow: hidden;
+}
+.result-table th, .result-table td {
+    padding: 3px 5px; border: 1px solid var(--border); text-align: center;
+    white-space: nowrap;
+}
+.result-table th { background: #f8fafc; font-weight: 600; position: sticky; top: 0; }
+.result-table .name-cell { font-weight: 600; position: sticky; left: 0; background: white; }
+.sched-cell {
+    min-width: 28px; height: 28px; cursor: grab; user-select: none;
+}
+.sched-cell.working { background: #d1fae5; }
+.sched-cell.off-day { background: #fee2e2; }
+.sched-cell.changed { outline: 2px solid var(--warning); outline-offset: -1px; }
+.sched-cell.drag-over { outline: 3px solid var(--primary); outline-offset: -2px; }
+.sched-cell.locked { cursor: default; }
+.count-cell.short { color: var(--danger); font-weight: 700; }
+#progress-area { text-align: center; padding: 40px; color: var(--text-secondary); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="sched-admin-page">
+    <h1>📅 自动排班</h1>
+    <p class="sched-subtitle">{{ first_day.year }}年{{ first_day.month }}月</p>
+    <div class="sched-controls">
+        <label>最少在岗:</label>
+        <input type="number" id="default-min" value="5" min="1" max="7">
+        <button class="btn btn-primary" onclick="runSchedule()">⚡ 自动排班</button>
+    </div>
+    <div class="req-calendar-wrap">
+        <div class="req-calendar-header">📌 每日人数（点日期调 1~7）</div>
+        <div class="req-grid" id="req-grid"></div>
+    </div>
+    <div id="result-area"><p id="progress-area">加载中...</p></div>
+</div>
+
+<script>
+function _localDate(str) {
+    var p = str.split('-');
+    return new Date(+p[0], +p[1] - 1, +p[2]);
+}
+
+const firstDay = '{{ first_day.isoformat() }}';
+const lastDay = '{{ last_day.isoformat() }}';
+let dayReqs = {};
+let conflictDates = {};
+let gridData = null;
+let pending = {};      // 'eid|date' -> true/false
+let dragSrc = null;
+let locked = true;
+
+function dflt() { return parseInt(document.getElementById('default-min').value) || 5; }
+
+// ── Calendar ──────────────────────────────────────────
+
+function drawCal() {
+    const v = dflt();
+    const s = _localDate(firstDay), e = _localDate(lastDay);
+    const fom = new Date(s.getFullYear(), s.getMonth(), 1);
+    let b = fom.getDay() === 0 ? 6 : fom.getDay() - 1;
+    const dim = new Date(s.getFullYear(), s.getMonth() + 1, 0).getDate();
+    let h = '';
+    for (const w of ['一','二','三','四','五','六','日']) h += `<div class="req-day-header">${w}</div>`;
+    for (let i = 0; i < b; i++) h += '<div class="req-day off-month"></div>';
+    for (let d = 1; d <= dim; d++) {
+        const ds = `${s.getFullYear()}-${String(s.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const o = new Date(s.getFullYear(), s.getMonth(), d);
+        let cls = 'req-day';
+        if (o < s || o > e) cls += ' off-month';
+        if (conflictDates[ds]) cls += ' short';
+        if (ds in dayReqs) cls += ' override';
+        const rv = ds in dayReqs ? dayReqs[ds] : v;
+        h += `<div class="${cls}" onclick="cDay('${ds}')">${d}<br><small>${rv}人</small></div>`;
+    }
+    const tr = (7 - ((b + dim) % 7)) % 7;
+    for (let i = 0; i < tr; i++) h += '<div class="req-day off-month"></div>';
+    document.getElementById('req-grid').innerHTML = h;
+}
+function cDay(ds) {
+    const c = dayReqs[ds];
+    if (c === undefined) dayReqs[ds] = 1;
+    else if (c >= 7) delete dayReqs[ds];
+    else dayReqs[ds] = c + 1;
+    drawCal();
+}
+
+// ── Schedule ──────────────────────────────────────────
+
+function runSchedule() {
+    document.getElementById('result-area').innerHTML = '<p id="progress-area">⏳ 计算中...</p>';
+    const v = dflt();
+    const spec = {};
+    for (const [k, val] of Object.entries(dayReqs)) if (val !== v) spec[k] = val;
+
+    fetch('/api/schedule/auto', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({default_min: v, specific_days: spec}),
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (!data.ok) throw new Error(data.msg);
+        return fetch('/api/schedule/result').then(r => r.json()).then(g => ({s: data, g}));
+    })
+    .then(({s, g}) => {
+        gridData = g; pending = {}; conflictDates = {};
+        for (const c of (s.conflicts || [])) conflictDates[c.date] = true;
+        locked = true;
+        render(s, g);
+    })
+    .catch(e => document.getElementById('result-area').innerHTML = `<p style="color:var(--danger);padding:40px;text-align:center;">${e.message}</p>`);
+}
+
+function get(eid, ds) {
+    const k = `${eid}|${ds}`;
+    if (k in pending) return pending[k];
+    if (!gridData) return true;
+    for (const e of gridData.employees) {
+        if (e.employee_id !== eid) continue;
+        for (const d of e.days) if (d.date === ds) return d.working;
+    }
+    return true;
+}
+function cnt(ds) {
+    let n = 0;
+    if (!gridData) return 0;
+    for (const e of gridData.employees) if (get(e.employee_id, ds)) n++;
+    return n;
+}
+
+function render(sched, grid) {
+    if (!grid) grid = gridData;
+    if (!grid || !grid.employees) {
+        document.getElementById('result-area').innerHTML = '<p id="progress-area">暂无数据</p>';
+        return;
+    }
+    gridData = grid;
+
+    const days = [];
+    var gFirst = _localDate(grid.first_day);
+    var gLast = _localDate(grid.last_day);
+    function _fmtLocal(d) {
+        return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    }
+    let d = new Date(gFirst);
+    while (d <= gLast) { days.push(_fmtLocal(d)); d.setDate(d.getDate() + 1); }
+
+    const v = dflt();
+    let html = '';
+
+    if (sched && sched.stats) {
+        const st = sched.stats;
+        html += '<div class="stats-summary">';
+        html += `<span class="stat-badge stat-good">📊 ${st.total_days} 天</span>`;
+        html += st.days_short > 0
+            ? `<span class="stat-badge stat-bad">⚠️ ${st.days_short} 天缺人 (${st.total_shortage} 人次)</span>`
+            : `<span class="stat-badge stat-good">✅ 全部满足</span>`;
+        html += '</div>';
+        if (sched.conflicts && sched.conflicts.length > 0) {
+            for (const c of sched.conflicts) {
+                html += `<div class="conflict-card"><h4>${c.date} 周${c.weekday} — ${c.assigned}/${c.needed} 人</h4>`;
+                if (c.available_off && c.available_off.length)
+                    html += `<p>💡 想休息可协调：${c.available_off.join('、')}</p>`;
+                html += '</div>';
+            }
+        }
+    }
+
+    const chg = Object.keys(pending).length;
+    html += '<div class="result-wrap"><div class="result-toolbar">';
+    html += '<span style="flex:1;font-weight:600;">📋 排班总表</span>';
+    html += `<span>${chg ? '🖊️ '+chg+' 处' : ''}</span>`;
+    html += `<button class="btn btn-primary" onclick="save()" id="b-save" style="display:none">💾 保存</button>`;
+    html += `<button class="btn btn-cancel" onclick="undo()" id="b-undo" style="display:none">↩ 撤销</button>`;
+    html += `<button id="b-lock" class="btn btn-warning" onclick="unlock()">🔓 解锁修改</button>`;
+    html += `<button class="btn btn-secondary" onclick="exportExcel()" style="margin-left:8px;">📊 Excel</button>`;
+    html += `<button class="btn btn-secondary" onclick="exportPDF()" style="margin-left:4px;">📄 PDF</button>`;
+    html += '</div>';
+
+    html += '<div class="result-table-wrap"><table class="result-table" id="schedule-table"><thead><tr><th>姓名</th><th>身份</th>';
+    for (const ds of days) {
+        const wd = ['一','二','三','四','五','六','日'][new Date(ds).getDay() === 0 ? 6 : new Date(ds).getDay() - 1];
+        html += `<th>${new Date(ds).getDate()}<br><small>${wd}</small></th>`;
+    }
+    html += '<th>出勤</th></tr></thead><tbody>';
+
+    html += '<tr><td><strong>👥</strong></td>';
+    let tw = 0;
+    for (const ds of days) {
+        const n = cnt(ds);
+        const sh = n < (dayReqs[ds] || v);
+        html += `<td class="${sh ? 'count-cell short' : ''}">${n}</td>`;
+        tw += n;
+    }
+    html += `<td>${tw}</td></tr>`;
+
+    for (const emp of grid.employees) {
+        html += `<tr><td class="name-cell">${emp.name}</td><td style="font-size:0.75rem;color:var(--text-secondary);white-space:nowrap;">${emp.department || '—'}</td>`;
+        let wc = 0;
+        for (const day of emp.days) {
+            const ds = day.date;
+            const w = get(emp.employee_id, ds);
+            const k = `${emp.employee_id}|${ds}`;
+            const ch = k in pending;
+            if (w) wc++;
+            html += `<td class="sched-cell ${w?'working':'off-day'}${ch?' changed':''}"
+                draggable="${!locked}" ondragstart="dsStart(event,'${emp.employee_id}','${ds}')"
+                ondragover="dsOver(event)" ondrop="dsDrop(event,'${emp.employee_id}','${ds}')"
+                ondragend="dsEnd(event)" data-ds="${ds}">${w?'出':'休'}</td>`;
+        }
+        html += `<td>${wc}天</td></tr>`;
+    }
+    html += '</tbody></table></div></div>';
+    document.getElementById('result-area').innerHTML = html;
+    drawCal();
+    ui();
+}
+
+// ── Lock UI ───────────────────────────────────────────
+
+function ui() {
+    const lockBtn = document.getElementById('b-lock');
+    const saveBtn = document.getElementById('b-save');
+    const undoBtn = document.getElementById('b-undo');
+    if (!lockBtn) return;
+    
+    lockBtn.style.display = locked ? 'inline-flex' : 'none';
+    saveBtn.style.display = (!locked && Object.keys(pending).length) ? 'inline-flex' : 'none';
+    undoBtn.style.display = (!locked && Object.keys(pending).length) ? 'inline-flex' : 'none';
+    
+    document.querySelectorAll('.sched-cell').forEach(el => {
+        el.draggable = !locked;
+        el.style.cursor = locked ? 'default' : 'grab';
+    });
+}
+
+function unlock() {
+    locked = false;
+    ui();
+}
+
+function save() {
+    const ch = [];
+    for (const [k, w] of Object.entries(pending)) {
+        const [eid, ds] = k.split('|');
+        ch.push({employee_id: eid, date: ds, is_working: w});
+    }
+    if (!ch.length) return;
+    fetch('/api/schedule/update', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({changes: ch}),
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (!data.ok) throw new Error(data.msg);
+        pending = {};
+        locked = true;
+        return fetch('/api/schedule/result').then(r => r.json());
+    })
+    .then(g => { gridData = g; render(null, g); })
+    .catch(e => alert(e.message));
+}
+
+function undo() {
+    pending = {};
+    locked = true;
+    render(null, gridData);
+}
+
+// ── Drag & Drop ───────────────────────────────────────
+
+function exportExcel() {
+    var table = document.getElementById('schedule-table');
+    if (!table) return;
+    var rows = [];
+    for (var i = 0; i < table.rows.length; i++) {
+        var row = table.rows[i];
+        var cells = [];
+        for (var j = 0; j < row.cells.length; j++) {
+            var txt = row.cells[j].textContent.trim().replace(/\s+/g, ' ');
+            // Escape CSV
+            if (txt.indexOf(',') >= 0 || txt.indexOf('"') >= 0) {
+                txt = '"' + txt.replace(/"/g, '""') + '"';
+            }
+            cells.push(txt);
+        }
+        rows.push(cells.join(','));
+    }
+    var csv = rows.join('\n');
+    var blob = new Blob(['\uFEFF' + csv], {type: 'text/csv;charset=utf-8;'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = '排班表.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function exportPDF() {
+    var table = document.getElementById('schedule-table');
+    if (!table) return;
+    var clone = table.cloneNode(true);
+    clone.querySelectorAll('[draggable]').forEach(function(el) { el.removeAttribute('draggable'); });
+    var w = window.open('', '_blank', 'width=1200,height=800');
+    w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>排班表</title><style>');
+    w.document.write('body{font-family:sans-serif;padding:20px;}');
+    w.document.write('h1{font-size:18px;margin-bottom:12px;}');
+    w.document.write('table{border-collapse:collapse;width:100%;font-size:11px;}');
+    w.document.write('th,td{border:1px solid #ccc;padding:3px 5px;text-align:center;}');
+    w.document.write('th{background:#f0f4f8;font-weight:600;}');
+    w.document.write('</style></head><body>');
+    w.document.write('<h1>📋 排班总表</h1>');
+    w.document.write(clone.outerHTML);
+    w.document.write('</body></html>');
+    w.document.close();
+    setTimeout(function() { w.print(); }, 500);
+}
+
+function dsStart(e, eid, ds) {
+    if (locked) { e.preventDefault(); return; }
+    dragSrc = {eid, ds};
+    e.dataTransfer.setData('text', `${eid}|${ds}`);
+    e.dataTransfer.effectAllowed = 'move';
+}
+function dsOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
+function dsEnd() { dragSrc = null; }
+
+function dsDrop(e, teid, tds) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (locked) return;
+    const src = dragSrc;
+    dsEnd();
+    if (!src) return;
+    // Prevent drag to self (same cell)
+    if (src.eid === teid && src.ds === tds) return;
+    const sk = `${src.eid}|${src.ds}`;
+    const tk = `${teid}|${tds}`;
+    const sw = get(src.eid, src.ds);
+    const tw = get(teid, tds);
+    if (sw === tw) return; // same state, nothing
+    // Swap
+    pending[sk] = tw;
+    pending[tk] = sw;
+    render(null, gridData);
+}
+
+// ── Init ──────────────────────────────────────────────
+
+function load() {
+    fetch('/api/schedule/result')
+    .then(r => r.json())
+    .then(data => {
+        if (data.ok && data.employees && data.employees.length > 0) {
+            const has = data.employees.some(e => e.days.some(d => d.working !== undefined));
+            if (has) { gridData = data; locked = true; render(null, data); return; }
+        }
+        document.getElementById('result-area').innerHTML = '<p id="progress-area">点击「自动排班」开始</p>';
+    })
+    .catch(() => document.getElementById('result-area').innerHTML = '<p id="progress-area">点击「自动排班」开始</p>');
+}
+
+document.addEventListener('DOMContentLoaded', () => { drawCal(); load(); });
+</script>
+{% endblock %}

@@ -1,0 +1,283 @@
+{% extends "base.html" %}
+{% block head %}
+<script src="{{ url_for('static', filename='chart.umd.min.js') }}"></script>
+{% endblock %}
+{% block content %}
+<div class="stats-page">
+    <h1>{{ _('stats.title') }}</h1>
+
+    <div class="stats-filters">
+        <div class="filter-row">
+            <label>{{ _('stats.employee') }}</label>
+            <select id="stats-employee">
+                <option value="">{{ _('stats.employee') }}...</option>
+                {% for emp in employees %}
+                <option value="{{ emp.employee_id }}">{{ emp.name }} ({{ emp.department or '-' }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-row">
+            <label>{{ _('stats.start_date') }}</label>
+            <input type="date" id="stats-start">
+        </div>
+        <div class="filter-row">
+            <label>{{ _('stats.end_date') }}</label>
+            <input type="date" id="stats-end">
+        </div>
+        <div class="filter-row">
+            <button class="btn btn-primary" onclick="queryStats()">{{ _('stats.query') }}</button>
+            <button class="btn btn-secondary" onclick="exportCSV()">{{ _('stats.export') }}</button>
+        </div>
+    </div>
+
+    <div id="stats-summary" class="stats-summary"></div>
+
+    <div class="stats-charts">
+        <div class="chart-container">
+            <canvas id="hours-chart"></canvas>
+        </div>
+        <div class="chart-container">
+            <canvas id="status-chart"></canvas>
+        </div>
+    </div>
+
+    <div class="stats-table-wrap">
+        <table class="table" id="stats-table">
+            <thead>
+                <tr>
+                    <th>{{ _('stats.date') }}</th>
+                    <th>{{ _('stats.check_in') }}</th>
+                    <th>{{ _('stats.check_out') }}</th>
+                    <th>{{ _('stats.status') }}</th>
+                    <th>{{ _('stats.hours') }}</th>
+                </tr>
+            </thead>
+            <tbody id="stats-body">
+                <tr><td colspan="5" class="empty-msg">{{ _('stats.no_data') }}</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+let hoursChart = null;
+let statusChart = null;
+
+function getDateRange() {
+    const now = new Date();
+    const start = document.getElementById('stats-start').value;
+    const end = document.getElementById('stats-end').value;
+    function localDate(d) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return y + '-' + m + '-' + day;
+    }
+    if (!start) {
+        const first = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        document.getElementById('stats-start').value = localDate(first);
+    }
+    if (!end) {
+        const last = new Date(now.getFullYear(), now.getMonth(), 0);
+        document.getElementById('stats-end').value = localDate(last);
+    }
+    return {
+        start_date: document.getElementById('stats-start').value,
+        end_date: document.getElementById('stats-end').value,
+    };
+}
+
+// Auto-query on load
+document.addEventListener('DOMContentLoaded', () => {
+    getDateRange();
+    queryStats();
+});
+
+function queryStats() {
+    const range = getDateRange();
+    const employeeId = document.getElementById('stats-employee').value;
+
+    const body = {
+        employee_id: employeeId || null,
+        start_date: range.start_date,
+        end_date: range.end_date,
+    };
+
+    // Fetch records
+    fetch('/api/stats', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body),
+    })
+    .then(r => r.json())
+    .then(data => {
+        renderTable(data);
+        renderChart(data);
+    });
+
+    // Fetch summary
+    fetch('/api/stats/summary', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body),
+    })
+    .then(r => r.json())
+    .then(data => {
+        renderSummary(data);
+    });
+}
+
+function renderSummary(data) {
+    const el = document.getElementById('stats-summary');
+    el.innerHTML = `
+        <div class="summary-card">
+            <div class="summary-item"><span class="summary-label">出勤/排班</span><span class="summary-value">${data.working_days} / ${data.scheduled_days || data.working_days}</span></div>
+            <div class="summary-item"><span class="summary-label">{{ _('stats.total_hours') }}</span><span class="summary-value">${data.total_hours}h</span></div>
+            <div class="summary-item"><span class="summary-label">{{ _('stats.avg_hours') }}</span><span class="summary-value">${data.avg_hours}h</span></div>
+            <div class="summary-item"><span class="summary-label">{{ _('stats.late_count') }}</span><span class="summary-value">${data.late_count}</span></div>
+            <div class="summary-item"><span class="summary-label">{{ _('stats.early_count') }}</span><span class="summary-value">${data.early_count}</span></div>
+            <div class="summary-item"><span class="summary-label">{{ _('stats.absent') }}</span><span class="summary-value">${data.absent_count || 0}</span></div>
+            <div class="summary-item"><span class="summary-label">请假</span><span class="summary-value">${data.leave_count || 0}</span></div>
+            <div class="summary-item"><span class="summary-label">{{ _('stats.avg_check_in') }}</span><span class="summary-value">${data.avg_check_in}</span></div>
+        </div>
+    `;
+}
+
+function renderTable(data) {
+    const tbody = document.getElementById('stats-body');
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">{{ _('stats.no_data') }}</td></tr>';
+        return;
+    }
+
+    const statusLabels = {
+        'normal': '{{ _('stats.normal') }}',
+        'late': '{{ _('stats.late') }}',
+        'early_leave': '{{ _('stats.early_leave') }}',
+        'both': '{{ _('stats.both') }}',
+        'absent': '{{ _('stats.absent') }}',
+        'partial': '{{ _('stats.partial') }}',
+        'leave': '请假',
+    };
+    const statusColors = {
+        'normal': 'status-ok',
+        'late': 'status-warn',
+        'early_leave': 'status-warn',
+        'both': 'status-bad',
+        'absent': 'status-bad',
+        'partial': 'status-warn',
+    };
+
+    tbody.innerHTML = data.map(r => `
+        <tr>
+            <td>${r.date}</td>
+            <td>${r.check_in || '-'}</td>
+            <td>${r.check_out || '-'}</td>
+            <td><span class="status-badge ${statusColors[r.status] || ''}">${statusLabels[r.status] || r.status}</span></td>
+            <td>${r.working_hours != null ? r.working_hours + 'h' : '-'}</td>
+        </tr>
+    `).join('');
+}
+
+function renderChart(data) {
+    const statusLabels = {
+        'normal': '{{ _('stats.normal') }}',
+        'late': '{{ _('stats.late') }}',
+        'early_leave': '{{ _('stats.early_leave') }}',
+        'both': '{{ _('stats.both') }}',
+        'absent': '{{ _('stats.absent') }}',
+        'partial': '{{ _('stats.partial') }}',
+        'leave': '请假',
+    };
+
+    // Hours chart
+    const ctx1 = document.getElementById('hours-chart').getContext('2d');
+    const dates = data.map(r => r.date);
+    const hours = data.map(r => r.working_hours || 0);
+
+    if (hoursChart) hoursChart.destroy();
+    hoursChart = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+            labels: dates,
+            datasets: [{
+                label: '{{ _('stats.hours') }} (h)',
+                data: hours,
+                backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                borderColor: 'rgb(59, 130, 246)',
+                borderWidth: 1,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: { display: true, text: '{{ _('stats.hours') }}' }
+            },
+            scales: {
+                y: { beginAtZero: true, title: { display: true, text: 'hours' } }
+            }
+        }
+    });
+
+    // Status pie chart
+    const ctx2 = document.getElementById('status-chart').getContext('2d');
+    const counts = {};
+    data.forEach(r => {
+        counts[r.status] = (counts[r.status] || 0) + 1;
+    });
+    const labels = Object.keys(counts).map(k => statusLabels[k] || k);
+    const values = Object.values(counts);
+    const colors = {
+        'normal': '#10b981',
+        'late': '#f59e0b',
+        'early_leave': '#f59e0b',
+        'both': '#ef4444',
+        'absent': '#6b7280',
+        'partial': '#8b5cf6',
+        'leave': '#3b82f6',
+    };
+
+    if (statusChart) statusChart.destroy();
+    statusChart = new Chart(ctx2, {
+        type: 'pie',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: values,
+                backgroundColor: Object.keys(counts).map(k => colors[k] || '#94a3b8'),
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: { display: true, text: '{{ _('stats.status') }}' }
+            }
+        }
+    });
+}
+
+function exportCSV() {
+    const range = getDateRange();
+    const employeeId = document.getElementById('stats-employee').value;
+
+    fetch('/api/stats/export', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            employee_id: employeeId || null,
+            start_date: range.start_date,
+            end_date: range.end_date,
+        }),
+    })
+    .then(r => r.blob())
+    .then(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'attendance.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+    });
+}
+</script>
+{% endblock %}
