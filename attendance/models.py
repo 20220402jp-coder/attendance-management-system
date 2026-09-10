@@ -185,3 +185,15 @@ class ScheduleAssignment(db.Model):
     __table_args__ = (
         db.UniqueConstraint('employee_id', 'date', name='uix_assign_employee_date'),
     )
+
+
+class ClockTicket(db.Model):
+    """Persistent idempotency key and result for the shared clock client."""
+    __tablename__ = 'clock_tickets'
+    id = db.Column(db.String(36), primary_key=True)
+    employee_id = db.Column(db.String(20), nullable=False)
+    action = db.Column(db.String(20), nullable=False)
+    day = db.Column(db.String(10), nullable=False)
+    process_id = db.Column(db.String(32), nullable=False, default=lambda: __import__('os').environ.get('ATTENDANCE_PROCESS_ID', ''))
+    result = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.now)

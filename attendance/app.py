@@ -29,6 +29,9 @@ from models import (db, Employee, Schedule, AttendanceRecord,
                     compute_status)
 from version import APP_NAME, APP_VERSION
 
+CLOCK_PROCESS_ID = uuid.uuid4().hex
+os.environ['ATTENDANCE_PROCESS_ID'] = CLOCK_PROCESS_ID
+
 # ── App factory ───────────────────────────────────────────────────
 
 logger = setup_logging(
@@ -98,12 +101,31 @@ def _check_worker():
         try:
             with _write_lock:
                 with app.app_context():
-                    result = _process_check(job['data'], job.get('lang', 'zh'))
-            with _check_results_lock:
-                _check_results[job_id] = result
+                    from models import ClockTicket
+                    ticket = db.session.get(ClockTicket, job_id) if job.get('ticket') else None
+                    result = ({'ok': False, 'msg': '日期已变化，请重新确认当天状态'}
+                              if ticket and ticket.day != today().isoformat()
+                              else _process_check(job['data'], job.get('lang', 'zh')))
+                    if job.get('ticket'):
+                        from models import ClockTicket
+                        ticket = db.session.get(ClockTicket, job['job_id'])
+                        ticket.result = json.dumps(result)
+                        db.session.commit()
+            if not job.get('ticket'):
+                with _check_results_lock:
+                    _check_results[job_id] = result
         except Exception as e:
-            with _check_results_lock:
-                _check_results[job_id] = {'ok': False, 'msg': str(e)}
+            if job.get('ticket'):
+                with app.app_context():
+                    from models import ClockTicket
+                    db.session.rollback()
+                    ticket = db.session.get(ClockTicket, job_id)
+                    if ticket:
+                        ticket.result = json.dumps({'ok': False, 'msg': '处理失败，请重新确认当天状态'})
+                        db.session.commit()
+            else:
+                with _check_results_lock:
+                    _check_results[job_id] = {'ok': False, 'msg': str(e)}
         finally:
             _check_queue.task_done()
 
@@ -240,12 +262,132 @@ def get_lan_ip():
 
 # ── Routes: Clock in/out ─────────────────────────────────────────
 
+
+# Shared clock views; one configuration record makes selection/revision atomic.
+from theme_catalog import THEMES
+CLOCK_THEMES = {key: value['template'] for key, value in THEMES.items()}
+CLOCK_ASSETS_VERSION = '1'
+
+def clock_theme_config():
+    try:
+        value = json.loads(Setting.get('clock_theme', '{}'))
+        if value.get('theme') in CLOCK_THEMES and type(value.get('revision')) is int:
+            if value['theme'] == 'kimono' and not all(os.path.isfile(os.path.join(BASE_DIR, path)) for path in ('templates/clock_kimono.html', 'static/themes/kimono.css', 'static/themes/character.js')):
+                return {**value, 'theme': 'classic'}
+            return value
+    except (ValueError, TypeError, AttributeError):
+        pass
+    return {'theme': 'classic', 'revision': 0, 'previous': None}
+
+def local_theme_admin():
+    # The existing app has no account system. Theme writes are local-console only.
+    return (request.remote_addr in ('127.0.0.1', '::1') and
+            __import__('urllib.parse', fromlist=['urlsplit']).urlsplit(request.host_url).hostname in ('127.0.0.1', 'localhost', '::1'))
+
+def render_clock(theme, employees, config, preview):
+    boot = {'theme': theme, 'revision': config['revision'], 'preview': preview,
+            'lang': get_lang(), 'day': today().isoformat(), 'assetVersion': CLOCK_ASSETS_VERSION}
+    response = app.make_response(render_template(CLOCK_THEMES[theme], employees=employees, clock_boot=boot, design=THEMES[theme]))
+    response.headers['Cache-Control'] = 'no-store'
+    return response
+
+@app.route('/api/clock/theme')
+def api_clock_theme():
+    assets = {key: ['/static/themes/collection.css?v=1', '/static/themes/feedback.css?v=1'] for key in THEMES}
+    assets['original'] = ['/static/style.css', '/static/themes/feedback.css?v=1']
+    assets['classic'] = ['/static/style.css', '/static/themes/cyber.js?v=1', '/static/themes/vendor/three.module.js', '/static/themes/vendor/three.core.js', '/static/themes/feedback.css?v=1']
+    assets['kimono'] = ['/static/themes/kimono.css?v=1', '/static/themes/character.js?v=1', '/static/themes/vendor/three.module.js', '/static/themes/vendor/three.core.js']
+    response = jsonify(**clock_theme_config(), day=today().isoformat(), assets=assets)
+    response.headers['Cache-Control'] = 'no-store'
+    return response
+
+@app.route('/admin/appearance', methods=['GET', 'POST'])
+def admin_appearance():
+    if not local_theme_admin():
+        return '请在运行考勤程序的电脑上，通过 localhost 打开样式管理。', 403
+    if request.method == 'POST':
+        if (not session.get('theme_csrf') or
+                request.headers.get('X-Theme-CSRF') != session['theme_csrf']):
+            return jsonify(ok=False, msg='页面已过期，请刷新后重试'), 403
+        data = request.get_json(silent=True) or {}
+        with _write_lock:
+            current = clock_theme_config()
+            if data.get('revision') != current['revision']:
+                return jsonify(ok=False, msg='样式已被其他窗口修改，请刷新后重试'), 409
+            theme = current.get('previous') if data.get('rollback') else data.get('theme')
+            if theme not in CLOCK_THEMES:
+                return jsonify(ok=False, msg='请选择有效的内置样式'), 400
+            if theme != current['theme']:
+                current = {'theme': theme, 'previous': current['theme'], 'revision': current['revision'] + 1}
+                Setting.set('clock_theme', json.dumps(current))
+                logger.info('本机应用打卡样式: %s，版本: %s', theme, current['revision'])
+        return jsonify(ok=True, **current)
+    session.setdefault('theme_csrf', uuid.uuid4().hex)
+    return render_template('admin_appearance.html', theme_config=clock_theme_config(), csrf=session['theme_csrf'], themes=THEMES)
+
+@app.route('/admin/appearance/preview/<theme>')
+def appearance_preview(theme):
+    if not local_theme_admin():
+        return '仅可在本机预览', 403
+    if theme not in CLOCK_THEMES:
+        return '样式不存在', 404
+    from types import SimpleNamespace
+    employees = [SimpleNamespace(employee_id='PREVIEW', name='演示员工', department='体验', is_active=True)]
+    return render_clock(theme, employees, clock_theme_config(), True)
+
+@app.route('/api/clock/tickets', methods=['POST'])
+def create_clock_ticket():
+    from models import ClockTicket
+    data = request.get_json(silent=True) or {}
+    tid = data.get('request_id', '')
+    try:
+        uuid.UUID(tid)
+    except (ValueError, TypeError, AttributeError):
+        return jsonify(ok=False, msg='请求标识无效'), 400
+    if data.get('action') not in ('check_in', 'check_out'):
+        return jsonify(ok=False, msg='打卡操作无效'), 400
+    with _write_lock:
+        ticket = db.session.get(ClockTicket, tid)
+        if ticket:
+            if ticket.employee_id != data.get('employee_id') or ticket.action != data['action']:
+                return jsonify(ok=False, msg='请求标识冲突'), 409
+        else:
+            emp = Employee.query.filter_by(employee_id=data.get('employee_id'), is_active=True).first()
+            if not emp:
+                return jsonify(ok=False, msg=load_translations(get_lang())['error.employee_not_found']), 404
+            ticket = ClockTicket(id=tid, employee_id=emp.employee_id, action=data['action'], day=today().isoformat())
+            db.session.add(ticket)
+            db.session.commit()
+            _check_queue.put({'job_id': tid, 'data': data, 'lang': get_lang(), 'ticket': True})
+    _ensure_check_worker()
+    return jsonify(ok=True, request_id=tid), 202
+
+@app.route('/api/clock/tickets/<tid>')
+def get_clock_ticket(tid):
+    from models import ClockTicket
+    ticket = db.session.get(ClockTicket, tid)
+    if not ticket:
+        return jsonify(ok=False, missing=True), 404
+    if ticket.result:
+        return jsonify(pending=False, result=json.loads(ticket.result))
+    if ticket.process_id == CLOCK_PROCESS_ID:
+        return jsonify(pending=True)
+    # A process may stop after committing the attendance record but before the ticket.
+    emp = Employee.query.filter_by(employee_id=ticket.employee_id).first()
+    record = AttendanceRecord.query.filter_by(employee_id=emp.id, date=date.fromisoformat(ticket.day)).first() if emp else None
+    recorded = getattr(record, ticket.action, None) if record else None
+    if recorded and recorded >= ticket.created_at:
+        return jsonify(pending=False, result={'ok': True, 'msg': '打卡已记录', 'time': recorded.strftime('%H:%M:%S')})
+    if ticket.process_id != CLOCK_PROCESS_ID:
+        return jsonify(pending=False, result={'ok': False, 'msg': '服务已重启，未查到本次记录，请重新确认打卡状态'})
+    return jsonify(pending=True)
+
+
 @app.route('/')
 def index():
-    lang = get_lang()
-    t = load_translations(lang)
+    config = clock_theme_config()
     employees = Employee.query.filter_by(is_active=True).order_by(Employee.name).all()
-    return render_template('index.html', employees=employees)
+    return render_clock(config['theme'], employees, config, False)
 
 
 @app.route('/api/check', methods=['POST'])
