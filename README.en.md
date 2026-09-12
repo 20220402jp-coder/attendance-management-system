@@ -2,6 +2,29 @@
 
 <h2 align="center"><a href="README.md">中文</a> ｜ <a href="README.ja.md">日本語</a> ｜ English</h2>
 
+## Current version and features
+
+The published download is **v1.0.1**. The page-style features below are in the `main` source branch and have not been packaged into those downloads yet. Run the source using [Development instructions](DEVELOPMENT.md) to try them. Source startup requires Python; packaged downloads do not.
+
+- Employee management, weekly working hours, availability, automatic scheduling, attendance corrections and report export.
+- **11 selectable clock designs**, including the original page. Every design has a success animation; the sci-fi and kimono designs use Three.js.
+- Preview, apply and restore the previous design from Admin, while keeping the same employee clock URL.
+- Chinese, English and Japanese style management, with previews following the selected language.
+
+## Addresses
+
+While the app is running, open these on its host computer:
+
+| Page | Address |
+| --- | --- |
+| Clock | http://127.0.0.1:5000/ |
+| Admin | http://127.0.0.1:5000/admin/ |
+| Page styles (current source) | http://127.0.0.1:5000/admin/appearance |
+
+`5077` was an early demo port. Normal startup uses `5000`. Open the Admin address directly if there is no Admin link. If a desktop shortcut has been created locally, you can use it; the repository does not automatically install desktop shortcuts.
+
+Style settings can currently be managed only on the host computer. A complete administrator login and permission system is not implemented; use a trusted network. See the [User guide](USER_GUIDE.en.md) for switching, mobile access and backups.
+
 <h1>Download</h1>
 
 <h2>🪟 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.1/AttendanceSystem-1.0.1-Windows-x64.exe.zip">Download for Windows</a></h2>

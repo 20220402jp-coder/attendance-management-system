@@ -284,10 +284,15 @@ def local_theme_admin():
     return (request.remote_addr in ('127.0.0.1', '::1') and
             __import__('urllib.parse', fromlist=['urlsplit']).urlsplit(request.host_url).hostname in ('127.0.0.1', 'localhost', '::1'))
 
+def localized_themes():
+    translations = load_translations(get_lang())
+    return {key: {**item, **{field: translations.get(f'theme.{key}.{field}', item[field])
+            for field in ('name', 'subtitle', 'animation')}} for key, item in THEMES.items()}
+
 def render_clock(theme, employees, config, preview):
     boot = {'theme': theme, 'revision': config['revision'], 'preview': preview,
             'lang': get_lang(), 'day': today().isoformat(), 'assetVersion': CLOCK_ASSETS_VERSION}
-    response = app.make_response(render_template(CLOCK_THEMES[theme], employees=employees, clock_boot=boot, design=THEMES[theme]))
+    response = app.make_response(render_template(CLOCK_THEMES[theme], employees=employees, clock_boot=boot, design=localized_themes()[theme]))
     response.headers['Cache-Control'] = 'no-store'
     return response
 
@@ -304,35 +309,35 @@ def api_clock_theme():
 @app.route('/admin/appearance', methods=['GET', 'POST'])
 def admin_appearance():
     if not local_theme_admin():
-        return '请在运行考勤程序的电脑上，通过 localhost 打开样式管理。', 403
+        return load_translations(get_lang())['appearance.local'], 403
     if request.method == 'POST':
         if (not session.get('theme_csrf') or
                 request.headers.get('X-Theme-CSRF') != session['theme_csrf']):
-            return jsonify(ok=False, msg='页面已过期，请刷新后重试'), 403
+            return jsonify(ok=False, msg=load_translations(get_lang())['appearance.expired']), 403
         data = request.get_json(silent=True) or {}
         with _write_lock:
             current = clock_theme_config()
             if data.get('revision') != current['revision']:
-                return jsonify(ok=False, msg='样式已被其他窗口修改，请刷新后重试'), 409
+                return jsonify(ok=False, msg=load_translations(get_lang())['appearance.conflict']), 409
             theme = current.get('previous') if data.get('rollback') else data.get('theme')
             if theme not in CLOCK_THEMES:
-                return jsonify(ok=False, msg='请选择有效的内置样式'), 400
+                return jsonify(ok=False, msg=load_translations(get_lang())['appearance.invalid']), 400
             if theme != current['theme']:
                 current = {'theme': theme, 'previous': current['theme'], 'revision': current['revision'] + 1}
                 Setting.set('clock_theme', json.dumps(current))
                 logger.info('本机应用打卡样式: %s，版本: %s', theme, current['revision'])
         return jsonify(ok=True, **current)
     session.setdefault('theme_csrf', uuid.uuid4().hex)
-    return render_template('admin_appearance.html', theme_config=clock_theme_config(), csrf=session['theme_csrf'], themes=THEMES)
+    return render_template('admin_appearance.html', theme_config=clock_theme_config(), csrf=session['theme_csrf'], themes=localized_themes())
 
 @app.route('/admin/appearance/preview/<theme>')
 def appearance_preview(theme):
     if not local_theme_admin():
-        return '仅可在本机预览', 403
+        return load_translations(get_lang())['appearance.local_preview'], 403
     if theme not in CLOCK_THEMES:
-        return '样式不存在', 404
+        return load_translations(get_lang())['appearance.not_found'], 404
     from types import SimpleNamespace
-    employees = [SimpleNamespace(employee_id='PREVIEW', name='演示员工', department='体验', is_active=True)]
+    employees = [SimpleNamespace(employee_id='PREVIEW', name=load_translations(get_lang())['appearance.demo_name'], department=load_translations(get_lang())['appearance.demo_dept'], is_active=True)]
     return render_clock(theme, employees, clock_theme_config(), True)
 
 @app.route('/api/clock/tickets', methods=['POST'])
