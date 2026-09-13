@@ -1,7 +1,7 @@
 <h1 align="center">📋 考勤打卡系统</h1>
 
 <h2 align="center">中文 ｜ <a href="README.ja.md">日本語</a> ｜ <a href="README.en.md">English</a></h2>
-
+这是为需要简单考勤和排班工具的小企业制作的系统，支持中文、英文和日文
 ## 当前版本与功能
 
 已发布下载包为 **v1.0.2**，包含近期的个人码报班、扫码打卡和权限改动。
@@ -35,7 +35,7 @@
 
 <h2>🐧 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.2/AttendanceSystem-1.0.2-Linux-x64.zip">Linux 电脑点这里下载</a></h2>
 
-这是为需要简单考勤和排班工具的小企业制作的系统，支持中文、英文和日文。
+
 
 <h1>怎么使用</h1>
 
