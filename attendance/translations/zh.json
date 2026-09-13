@@ -279,5 +279,18 @@
   "clock_access.next": "进入我的打卡页面",
   "clock_access.hint": "使用与报班相同的个人码。首次使用请向管理员领取。",
   "clock_access.exit": "退出 / 下一位",
-  "clock_access.capacity": "三位码已分配完，无法再生成新码"
+  "clock_access.capacity": "三位码已分配完，无法再生成新码",
+  "clock.local_time": "本地时间",
+  "clock.live_clock": "实时钟",
+  "clock.current_time": "当前时间",
+  "clock.time_prefix": "时间",
+  "clock.select_hint": "01 / 选择",
+  "clock.precision": "每一刻都精准",
+  "clock.daily_tag": "打卡 · 出勤 · 日常",
+  "clock.character": "和服卡通人物",
+  "clock.preview_bow": "预览鞠躬动画",
+  "clock.close": "关闭",
+  "clock.daily": "每日",
+  "clock.check_in": "签到上班",
+  "clock.off_day": "今日休息"
 }

@@ -14,6 +14,7 @@ import uuid
 import time as time_module
 import threading
 import urllib.request
+import urllib.parse
 import queue as queue_module
 from datetime import date, datetime, timedelta
 from functools import lru_cache
@@ -496,9 +497,26 @@ def api_today(employee_id):
 
 @app.route('/set_lang/<lang>')
 def set_lang(lang):
-    if lang in ('zh', 'en', 'ja'):
-        session['lang'] = lang
-    return redirect(request.referrer or '/')
+    if lang not in ('zh', 'en', 'ja'):
+        return redirect(request.referrer or url_for('index'))
+    session['lang'] = lang
+
+    # Keep the selected language in the URL as well as the session.  This
+    # matters when the referrer already contains ?lang=zh: redirecting back
+    # unchanged would immediately override the newly selected language.
+    referrer = request.referrer
+    if referrer:
+        parts = urllib.parse.urlsplit(referrer)
+        if parts.netloc and parts.netloc != request.host:
+            target = url_for('index', lang=lang)
+        else:
+            query = [(key, value) for key, value in urllib.parse.parse_qsl(parts.query, keep_blank_values=True)
+                     if key != 'lang']
+            query.append(('lang', lang))
+            target = urllib.parse.urlunsplit(('', '', parts.path or '/', urllib.parse.urlencode(query), parts.fragment))
+    else:
+        target = url_for('index', lang=lang)
+    return redirect(target)
 
 
 # ── QR Code Routes ────────────────────────────────────────────────

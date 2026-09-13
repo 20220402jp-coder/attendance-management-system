@@ -279,5 +279,18 @@
   "clock_access.next": "Open my clock",
   "clock_access.hint": "Use the same code as for availability. Ask your administrator for your first code.",
   "clock_access.exit": "Exit / Next person",
-  "clock_access.capacity": "All three-digit codes are allocated"
+  "clock_access.capacity": "All three-digit codes are allocated",
+  "clock.local_time": "LOCAL TIME",
+  "clock.live_clock": "LIVE CLOCK",
+  "clock.current_time": "CURRENT TIME",
+  "clock.time_prefix": "TIME",
+  "clock.select_hint": "01 / SELECT",
+  "clock.precision": "PRECISION IN EVERY MOMENT",
+  "clock.daily_tag": "ATTENDANCE · PRESENCE · DAILY",
+  "clock.character": "Kimono cartoon character",
+  "clock.preview_bow": "Preview bow animation",
+  "clock.close": "Close",
+  "clock.daily": "DAILY",
+  "clock.check_in": "Check in",
+  "clock.off_day": "Day off"
 }

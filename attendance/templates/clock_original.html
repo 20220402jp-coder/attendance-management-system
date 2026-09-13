@@ -269,7 +269,7 @@
         <div class="clock-time-wrap">
             <div class="clock-time" id="clock-time">--:--</div>
         </div>
-        <div class="clock-date">{{ now.strftime('%m/%d %a') }}</div>
+        <div id="date" class="clock-date"></div>
 
         <!-- Select employee -->
         <div class="clock-select">
@@ -295,12 +295,12 @@
         <!-- Off day -->
         <div id="off-day" style="display:none;" class="off-day">
             <div class="off-day-emoji">☀️</div>
-            <div class="off-day-text">今日休息</div>
+            <div class="off-day-text">{{ _('clock.off_day') }}</div>
         </div>
 
         <!-- Clock button -->
         <button class="clock-btn primary btn-ripple" id="clock-btn" style="display:none;">
-            📋 签到上班
+            📋 {{ _('clock.check_in') }}
         </button>
 
         <!-- Result -->

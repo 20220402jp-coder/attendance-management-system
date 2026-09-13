@@ -279,5 +279,18 @@
   "clock_access.next": "自分の打刻画面へ",
   "clock_access.hint": "シフト希望登録と同じコードです。初回は管理者から受け取ってください。",
   "clock_access.exit": "終了 / 次の方",
-  "clock_access.capacity": "3桁コードの空きがありません"
+  "clock_access.capacity": "3桁コードの空きがありません",
+  "clock.local_time": "現地時刻",
+  "clock.live_clock": "ライブ時計",
+  "clock.current_time": "現在時刻",
+  "clock.time_prefix": "時刻",
+  "clock.select_hint": "01 / 選択",
+  "clock.precision": "一瞬一瞬を正確に",
+  "clock.daily_tag": "打刻・出勤・日常",
+  "clock.character": "着物のキャラクター",
+  "clock.preview_bow": "お辞儀アニメーションをプレビュー",
+  "clock.close": "閉じる",
+  "clock.daily": "毎日",
+  "clock.check_in": "出勤打刻",
+  "clock.off_day": "本日は休み"
 }
