@@ -33,7 +33,7 @@ def test_new_installation_creates_empty_database(tmp_path, monkeypatch):
 def test_main_pages_are_available(tmp_path, monkeypatch):
     module = load_app(tmp_path, monkeypatch)
     client = module.app.test_client()
-    for path in ('/', '/admin/', '/admin/employees', '/admin/stats', '/schedule/'):
+    for path in ('/clock/access', '/admin/', '/admin/employees', '/admin/stats', '/schedule/'):
         assert client.get(path).status_code == 200
 
 
@@ -44,7 +44,7 @@ def test_removed_development_routes_stay_removed(tmp_path, monkeypatch):
     assert client.get('/download').status_code == 404
 
 
-def test_employee_can_be_added_and_check_in_without_verification_code(tmp_path, monkeypatch):
+def test_employee_can_be_added_and_check_in_with_personal_code(tmp_path, monkeypatch):
     module = load_app(tmp_path, monkeypatch)
     client = module.app.test_client()
 
@@ -57,6 +57,8 @@ def test_employee_can_be_added_and_check_in_without_verification_code(tmp_path, 
     assert response.status_code == 200
     assert response.get_json()['ok'] is True
 
+    assert client.post('/api/check', json={'employee_id':'E001','action':'check_in'}).status_code == 401
+    authorize_clock(client, response.json['id'])
     response = client.post('/api/check', json={
         'employee_id': 'E001',
         'action': 'check_in',
@@ -88,4 +90,13 @@ def test_legacy_database_is_upgraded_without_losing_employees(tmp_path, monkeypa
     with sqlite3.connect(database) as connection:
         columns = {row[1] for row in connection.execute('PRAGMA table_info(employees)')}
         assert {'rest_days', 'min_rest_per_week'} <= columns
-        assert connection.execute('SELECT version FROM schema_version').fetchone()[0] == 2
+        assert connection.execute('SELECT version FROM schema_version').fetchone()[0] == 3
+
+
+def authorize_clock(client, eid):
+    code = client.post(f'/api/employee/{eid}/schedule-code',json={}).json['code']
+    assert client.post('/api/clock/access/login',json={'code':code}).json['ok']
+    with client.session_transaction() as session:
+        token=session['clock_token']
+    client.environ_base['HTTP_X_CLOCK_TOKEN']=token
+    return code

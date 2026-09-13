@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block head %}
+<style>
+.personal-entry{max-width:360px;margin:28px auto;padding:24px;background:var(--card-bg,#fff);border:1px solid var(--border);border-radius:20px;text-align:center;box-sizing:border-box}.personal-entry h1{font-size:1.5rem;margin:0 0 12px}.personal-entry p{line-height:1.6;color:var(--text-secondary)}#personal-code{width:100%;box-sizing:border-box;border:2px solid var(--border);border-radius:12px;padding:12px;font-size:34px;letter-spacing:16px;text-align:center;background:var(--card-bg,#fff);color:var(--text)}.personal-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0}.personal-pad button{font:inherit;font-size:26px;min-height:60px;border:1px solid var(--border);border-radius:12px;background:var(--card-bg,#fff);color:var(--text);cursor:pointer;touch-action:manipulation}.personal-pad .word{font-size:14px}.personal-pad button:active{background:#dbeafe}#enter-clock{width:100%;min-height:52px;justify-content:center}#entry-error{min-height:24px;color:#b42318;font-size:.9rem}.personal-entry .languages{margin-top:20px;display:flex;justify-content:center;gap:16px}@media(max-width:480px){.personal-entry{margin:12px auto;padding:18px}}
+</style>
+{% endblock %}
+{% block content %}
+<section class="personal-entry">
+<h1>{{ _('clock_access.title') }}</h1>
+<p>{{ _('clock_access.enter') }}</p>
+<input id="personal-code" type="password" maxlength="3" inputmode="none" autocomplete="off" aria-label="{{ _('clock_access.enter') }}">
+<div class="personal-pad">
+{% for n in [1,2,3,4,5,6,7,8,9] %}<button type="button" data-digit="{{ n }}">{{ n }}</button>{% endfor %}
+<button type="button" class="word" id="clear-code">{{ _('access.clear') }}</button><button type="button" data-digit="0">0</button><button type="button" class="word" id="erase-code">{{ _('access.erase') }}</button>
+</div>
+<button id="enter-clock" class="btn btn-primary" disabled>{{ _('clock_access.next') }}</button>
+<p id="entry-error" role="status" aria-live="polite"></p>
+<p>{{ _('clock_access.hint') }}</p>
+<div class="languages">{% for code,label in langs %}<a href="?lang={{ code }}">{{ label }}</a>{% endfor %}</div>
+</section>
+<script>
+const input=document.getElementById('personal-code'),enter=document.getElementById('enter-clock'),error=document.getElementById('entry-error');let busy=false;
+function update(){input.value=input.value.replace(/[^0-9]/g,'').slice(0,3);enter.disabled=busy||input.value.length!==3;}
+input.addEventListener('input',update);
+document.querySelectorAll('[data-digit]').forEach(button=>button.addEventListener('click',()=>{if(!busy){input.value=(input.value+button.dataset.digit).slice(0,3);update();}}));
+document.getElementById('clear-code').onclick=()=>{if(!busy){input.value='';update();}};
+document.getElementById('erase-code').onclick=()=>{if(!busy){input.value=input.value.slice(0,-1);update();}};
+document.addEventListener('keydown',event=>{if(busy)return;if(event.key==='Enter'){event.preventDefault();enter.click();}else if(event.target!==input && /^[0-9]$/.test(event.key)){input.value=(input.value+event.key).slice(0,3);update();}});
+enter.onclick=async()=>{if(busy||input.value.length!==3)return;busy=true;update();error.textContent='';try{
+const response=await fetch('/api/clock/access/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:input.value})});
+const data=await response.json();if(!response.ok||!data.ok)throw new Error(data.msg||tr('access.failed'));
+location.replace('/?lang='+{{ current_lang|tojson }});
+}catch(e){error.textContent=e.message;}finally{busy=false;input.value='';update();}};
+</script>
+{% endblock %}

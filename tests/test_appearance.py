@@ -1,7 +1,7 @@
 import importlib
 import time
 import uuid
-from test_app import load_app
+from test_app import load_app, authorize_clock
 
 
 def admin_headers(client):
@@ -13,6 +13,8 @@ def admin_headers(client):
 def test_switch_preview_rollback_and_access(tmp_path, monkeypatch):
     module = load_app(tmp_path, monkeypatch)
     client = module.app.test_client()
+    eid=client.post('/api/employee',json={'employee_id':'VIEW','name':'View'}).json['id']
+    authorize_clock(client,eid)
     headers = admin_headers(client)
     assert client.get('/api/clock/theme').json['theme'] == 'classic'
     assert client.post('/admin/appearance', json={'theme': 'kimono', 'revision': 0}).status_code == 403
@@ -37,7 +39,8 @@ def test_ticket_duplicate_and_result_survive_view_switch(tmp_path, monkeypatch):
     module = load_app(tmp_path, monkeypatch)
     models = importlib.import_module('models')
     client = module.app.test_client()
-    client.post('/api/employee', json={'employee_id': 'E001', 'name': '测试员工'})
+    eid=client.post('/api/employee', json={'employee_id': 'E001', 'name': '测试员工'}).json['id']
+    authorize_clock(client,eid)
     data = {'request_id': str(uuid.uuid4()), 'employee_id': 'E001', 'action': 'check_in'}
     assert client.post('/api/clock/tickets', json={**data, 'action': 'bad'}).status_code == 400
     assert client.post('/api/clock/tickets', json=data).status_code == 202
@@ -63,10 +66,13 @@ def test_restart_pending_ticket_is_resolved(tmp_path, monkeypatch):
     module = load_app(tmp_path, monkeypatch)
     models = importlib.import_module('models')
     tid = str(uuid.uuid4())
+    client=module.app.test_client()
+    eid=client.post('/api/employee',json={'employee_id':'removed','name':'Restart'}).json['id']
+    authorize_clock(client,eid)
     with module.app.app_context():
         models.db.session.add(models.ClockTicket(id=tid, employee_id='removed', action='check_in', day=module.today().isoformat(), process_id='old'))
         models.db.session.commit()
-    result = module.app.test_client().get('/api/clock/tickets/' + tid).json
+    result = client.get('/api/clock/tickets/' + tid).json
     assert result['pending'] is False
     assert result['result']['ok'] is False
 
@@ -75,6 +81,8 @@ def test_all_designs_preview_apply_and_feedback(tmp_path, monkeypatch):
     module = load_app(tmp_path, monkeypatch)
     models = importlib.import_module('models')
     client = module.app.test_client()
+    eid=client.post('/api/employee',json={'employee_id':'VIEW','name':'View'}).json['id']
+    authorize_clock(client,eid)
     headers = admin_headers(client)
     assert len(module.CLOCK_THEMES) == 11
     revision = 0

@@ -5,7 +5,7 @@ import sqlite3
 from config import DATABASE_PATH
 
 
-LATEST_SCHEMA_VERSION = 2
+LATEST_SCHEMA_VERSION = 3
 
 
 def _columns(connection, table):
@@ -39,6 +39,11 @@ def run_migrations():
                 connection.execute(
                     'ALTER TABLE attendance_records ADD COLUMN late_notified BOOLEAN DEFAULT 0'
                 )
+
+        if 'employees' in {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")}:
+            if 'employment_type' not in _columns(connection, 'employees'):
+                connection.execute("ALTER TABLE employees ADD COLUMN employment_type TEXT NOT NULL DEFAULT 'part_time'")
+                connection.execute("UPDATE employees SET employment_type = 'regular' WHERE instr(COALESCE(department, ''), '全职') > 0")
 
         connection.execute('DELETE FROM schema_version')
         connection.execute(

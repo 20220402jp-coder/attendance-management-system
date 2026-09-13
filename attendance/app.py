@@ -1,4 +1,7 @@
 import json
+import secrets
+import hashlib
+from werkzeug.security import generate_password_hash, check_password_hash
 import os
 import sys
 import csv
@@ -24,7 +27,7 @@ from config import Config, BASE_DIR, DATA_DIR
 from database import run_migrations
 from logging_config import setup_logging
 from models import (db, Employee, Schedule, AttendanceRecord,
-                    SchedulePreference, ScheduleAssignment, Setting,
+                    SchedulePreference, ScheduleAssignment, Setting, ScheduleAccess, ScheduleSession, ClockSession, ClockAccessAttempt,
                     get_schedule_for_day, compute_working_hours,
                     compute_status)
 from version import APP_NAME, APP_VERSION
@@ -291,7 +294,10 @@ def localized_themes():
 
 def render_clock(theme, employees, config, preview):
     boot = {'theme': theme, 'revision': config['revision'], 'preview': preview,
-            'lang': get_lang(), 'day': today().isoformat(), 'assetVersion': CLOCK_ASSETS_VERSION}
+            'lang': get_lang(), 'day': today().isoformat(), 'assetVersion': CLOCK_ASSETS_VERSION,
+            'token': '' if preview else session.get('clock_token', ''),
+            'employeeId': employees[0].employee_id if employees else '',
+            'exitLabel': load_translations(get_lang())['clock_access.exit']}
     response = app.make_response(render_template(CLOCK_THEMES[theme], employees=employees, clock_boot=boot, design=localized_themes()[theme]))
     response.headers['Cache-Control'] = 'no-store'
     return response
@@ -342,6 +348,11 @@ def appearance_preview(theme):
 
 @app.route('/api/clock/tickets', methods=['POST'])
 def create_clock_ticket():
+    emp = clock_identity()
+    if not emp:
+        return schedule_error('expired', 401)
+    if (request.get_json(silent=True) or {}).get('employee_id') != emp.employee_id:
+        return schedule_error('own_only', 403)
     from models import ClockTicket
     data = request.get_json(silent=True) or {}
     tid = data.get('request_id', '')
@@ -369,10 +380,15 @@ def create_clock_ticket():
 
 @app.route('/api/clock/tickets/<tid>')
 def get_clock_ticket(tid):
+    emp = clock_identity()
+    if not emp:
+        return schedule_error('expired', 401)
     from models import ClockTicket
     ticket = db.session.get(ClockTicket, tid)
     if not ticket:
         return jsonify(ok=False, missing=True), 404
+    if ticket.employee_id != emp.employee_id:
+        return schedule_error('own_only', 403)
     if ticket.result:
         return jsonify(pending=False, result=json.loads(ticket.result))
     if ticket.process_id == CLOCK_PROCESS_ID:
@@ -391,14 +407,21 @@ def get_clock_ticket(tid):
 @app.route('/')
 def index():
     config = clock_theme_config()
-    employees = Employee.query.filter_by(is_active=True).order_by(Employee.name).all()
-    return render_clock(config['theme'], employees, config, False)
+    emp = clock_identity(page=True)
+    if not emp:
+        return redirect(url_for('clock_access_page', lang=get_lang()))
+    return render_clock(config['theme'], [emp], config, False)
 
 
 @app.route('/api/check', methods=['POST'])
 def api_check():
     """Clock in or out — queued for orderly processing."""
-    data = request.get_json()
+    emp = clock_identity()
+    if not emp:
+        return schedule_error('expired', 401)
+    data = request.get_json(silent=True) or {}
+    if data.get('employee_id') != emp.employee_id:
+        return schedule_error('own_only', 403)
     lang = get_lang()
     job_id = str(uuid.uuid4())
 
@@ -436,10 +459,12 @@ def api_check_queue_status():
 
 @app.route('/api/today/<employee_id>')
 def api_today(employee_id):
-    """Get today's status for an employee."""
-    emp = Employee.query.filter_by(employee_id=employee_id, is_active=True).first()
+    """Get only the verified employee's status."""
+    emp = clock_identity()
     if not emp:
-        return jsonify({'ok': False}), 404
+        return schedule_error('expired', 401)
+    if emp.employee_id != employee_id:
+        return schedule_error('own_only', 403)
 
     dt_today = today()
     record = AttendanceRecord.query.filter_by(
@@ -486,7 +511,7 @@ def api_server_info():
         'ok': True,
         'ip': get_lan_ip(),
         'port': port,
-        'url': f'http://{get_lan_ip()}:{port}/',
+        'url': f'http://{get_lan_ip()}:{port}/clock/access?lang={get_lang()}',
     })
 
 
@@ -516,7 +541,7 @@ def qrcode_print():
     import qrcode.image.svg
 
     port = request.host.split(':')[-1] if ':' in request.host else '5000'
-    url = f'http://{get_lan_ip()}:{port}/'
+    url = f'http://{get_lan_ip()}:{port}/clock/access?lang={get_lang()}'
 
     factory = qrcode.image.svg.SvgPathImage
     img = qrcode.make(url, image_factory=factory, box_size=12)
@@ -546,7 +571,7 @@ h1 {{ font-size:24px;margin-bottom:8px;color:#1a202c; }}
 <h1>📱 打卡二维码</h1>
 <div class="url">{url}</div>
 <div class="qr-wrap">{svg}</div>
-<div class="hint">手机扫码打开打卡页面</div>
+<div class="hint">手机扫码 → 输入三位个人码 → 本人打卡</div>
 <div class="no-print" style="margin-top:32px;">
 <button onclick="window.print()" style="padding:12px 32px;font-size:16px;border:none;border-radius:10px;background:#3b82f6;color:white;cursor:pointer;font-weight:600;">🖨️ 打印 / 另存为 PDF</button>
 </div>
@@ -572,10 +597,14 @@ def admin_employees():
 @app.route('/api/employee', methods=['POST'])
 def api_add_employee():
     data = request.get_json()
-    is_fulltime = '全职' in (data.get('department', '') or '')
+    employment_type = data.get('employment_type', 'regular' if '全职' in (data.get('department', '') or '') else 'part_time')
+    if employment_type not in ('regular', 'part_time'):
+        return jsonify(ok=False, msg=load_translations(get_lang())['admin.invalid_employment_type']), 400
+    is_fulltime = employment_type == 'regular'
     rest_days = data.get('rest_days', '5,6' if is_fulltime else '')
     min_rest = int(data.get('min_rest_per_week', 2 if is_fulltime else 0))
     emp = Employee(
+        employment_type=employment_type,
         employee_id=data['employee_id'],
         name=data['name'],
         department=data.get('department', ''),
@@ -602,6 +631,10 @@ def api_add_employee():
 def api_update_employee(eid):
     data = request.get_json()
     emp = Employee.query.get_or_404(eid)
+    employment_type = data.get('employment_type', emp.employment_type)
+    if employment_type not in ('regular', 'part_time'):
+        return jsonify(ok=False, msg=load_translations(get_lang())['admin.invalid_employment_type']), 400
+    emp.employment_type = employment_type
     emp.name = data.get('name', emp.name)
     emp.department = data.get('department', emp.department)
     emp.lang = data.get('lang', emp.lang)
@@ -615,6 +648,9 @@ def api_update_employee(eid):
 @app.route('/api/employee/<int:eid>', methods=['DELETE'])
 def api_delete_employee(eid):
     emp = Employee.query.get_or_404(eid)
+    ScheduleSession.query.filter_by(employee_id=eid).delete()
+    ClockSession.query.filter_by(employee_id=eid).delete()
+    ScheduleAccess.query.filter_by(employee_id=eid).delete()
     db.session.delete(emp)
     db.session.commit()
     return jsonify({'ok': True})
@@ -980,7 +1016,7 @@ def api_stats_export():
 
     for row in rows:
         emp_obj = Employee.query.filter_by(employee_id=row['employee_id']).first()
-        is_regular = '全职' in (emp_obj.department or '') if emp_obj else False
+        is_regular = emp_obj.employment_type == 'regular' if emp_obj else False
         emp_type = '全职' if is_regular else '兼职'
         status = STATUS_LABELS.get(row['status'], row['status'])
         if is_regular:
@@ -1038,12 +1074,212 @@ def schedule_page():
                            first_day=first_day, last_day=last_day)
 
 
+# A per-tab token prevents another tab's login from changing the active employee.
+_schedule_access_lock = threading.Lock()
+SCHEDULE_IDLE_SECONDS = 300
+
+
+def schedule_error(key, status=400):
+    return jsonify(ok=False, msg=load_translations(get_lang())['access.' + key]), status
+
+
+def schedule_identity():
+    token = request.headers.get('X-Schedule-Token', '')
+    if not token:
+        return None
+    login = db.session.get(ScheduleSession, hashlib.sha256(token.encode()).hexdigest())
+    if not login:
+        return None
+    emp = db.session.get(Employee, login.employee_id)
+    if not emp or not emp.is_active or time_module.time() - login.last_active >= SCHEDULE_IDLE_SECONDS:
+        db.session.delete(login)
+        db.session.commit()
+        return None
+    login.last_active = time_module.time()
+    db.session.commit()
+    return emp
+
+
+@app.after_request
+def schedule_no_cache(response):
+    if request.path == '/' or request.path.startswith(('/clock/access', '/api/clock/', '/api/today/', '/api/check', '/schedule/', '/api/schedule/access', '/api/schedule/preferences')) or request.path.endswith('/schedule-code'):
+        response.headers['Cache-Control'] = 'no-store'
+    return response
+
+
+@app.route('/api/employee/<int:eid>/schedule-code', methods=['POST'])
+def reset_schedule_code(eid):
+    # Admin remains password-free by the owner's explicit choice.
+    if not request.is_json:
+        return schedule_error('failed')
+    Employee.query.get_or_404(eid)
+    with _schedule_access_lock:
+        access = db.session.get(ScheduleAccess, eid)
+        # A code alone identifies its owner at the clock, so codes must be unique.
+        hashes = [row.code_hash for row in ScheduleAccess.query.all()]
+        if len(hashes) >= 1000:
+            return jsonify(ok=False, msg=load_translations(get_lang())['clock_access.capacity']), 409
+        start = secrets.randbelow(1000)
+        for offset in range(1000):
+            code = f'{(start + offset) % 1000:03d}'
+            if not any(check_password_hash(value, code) for value in hashes):
+                break
+        else:
+            return schedule_error('failed')
+        if not access:
+            access = ScheduleAccess(employee_id=eid)
+            db.session.add(access)
+        access.code_hash = generate_password_hash(code)
+        access.failures = 0
+        access.locked_until = 0
+        ScheduleSession.query.filter_by(employee_id=eid).delete()
+        ClockSession.query.filter_by(employee_id=eid).delete()
+        db.session.commit()
+    return jsonify(ok=True, code=code)
+
+
+
+def clock_identity(page=False):
+    token = session.get('clock_token', '')
+    if not token or (not page and request.headers.get('X-Clock-Token') != token):
+        return None
+    login = db.session.get(ClockSession, hashlib.sha256(token.encode()).hexdigest())
+    if not login:
+        return None
+    emp = db.session.get(Employee, login.employee_id)
+    if not emp or not emp.is_active or time_module.time() - login.last_active >= SCHEDULE_IDLE_SECONDS:
+        db.session.delete(login)
+        db.session.commit()
+        return None
+    # Background status polling must not keep an abandoned terminal signed in.
+    return emp
+
+
+@app.route('/clock/access')
+def clock_access_page():
+    old = session.pop('clock_token', '')
+    if old:
+        ClockSession.query.filter_by(token_hash=hashlib.sha256(old.encode()).hexdigest()).delete()
+        db.session.commit()
+    return render_template('clock_access.html')
+
+
+@app.route('/api/clock/access/login', methods=['POST'])
+def clock_login():
+    data = request.get_json(silent=True) or {}
+    code = data.get('code', '')
+    if not isinstance(code, str) or len(code) != 3 or any(c not in '0123456789' for c in code):
+        return schedule_error('three_digits')
+    # Code-only entry cannot attribute wrong guesses to an employee; limit by source.
+    address = hashlib.sha256((request.remote_addr or '').encode()).hexdigest()
+    with _schedule_access_lock:
+        attempt = db.session.get(ClockAccessAttempt, address)
+        if not attempt:
+            attempt = ClockAccessAttempt(address=address, failures=0, locked_until=0)
+            db.session.add(attempt)
+        now = time_module.time()
+        if attempt.locked_until > now:
+            return schedule_error('locked', 429)
+        if attempt.locked_until:
+            attempt.failures = 0
+            attempt.locked_until = 0
+        matches = [(access, emp) for access, emp in db.session.query(ScheduleAccess, Employee).join(Employee, Employee.id == ScheduleAccess.employee_id).filter(Employee.is_active == True).all() if check_password_hash(access.code_hash, code)]
+        if len(matches) != 1:
+            attempt.failures += 1
+            if attempt.failures >= 5:
+                attempt.locked_until = now + 600
+            db.session.commit()
+            return schedule_error('locked' if attempt.failures >= 5 else 'wrong', 429 if attempt.failures >= 5 else 403)
+        access, emp = matches[0]
+        if access.locked_until > now:
+            return schedule_error('locked', 429)
+        attempt.failures = 0
+        access.failures = 0
+        access.locked_until = 0
+        old = session.pop('clock_token', '')
+        if old:
+            ClockSession.query.filter_by(token_hash=hashlib.sha256(old.encode()).hexdigest()).delete()
+        ClockSession.query.filter(ClockSession.last_active <= now - SCHEDULE_IDLE_SECONDS).delete()
+        token = secrets.token_urlsafe(32)
+        db.session.add(ClockSession(token_hash=hashlib.sha256(token.encode()).hexdigest(), employee_id=emp.id, last_active=now))
+        db.session.commit()
+        session['clock_token'] = token
+        return jsonify(ok=True)
+
+
+@app.route('/api/clock/access/logout', methods=['POST'])
+def clock_logout():
+    token = session.get('clock_token', '')
+    if request.headers.get('X-Clock-Token') != token:
+        return schedule_error('expired', 401)
+    ClockSession.query.filter_by(token_hash=hashlib.sha256(token.encode()).hexdigest()).delete()
+    session.pop('clock_token', None)
+    db.session.commit()
+    return jsonify(ok=True)
+
+
+@app.route('/api/clock/access/keepalive', methods=['POST'])
+def clock_keepalive():
+    if not clock_identity():
+        return schedule_error('expired', 401)
+    login = db.session.get(ClockSession, hashlib.sha256(session['clock_token'].encode()).hexdigest())
+    login.last_active = time_module.time()
+    db.session.commit()
+    return jsonify(ok=True)
+
+
+@app.route('/api/schedule/access/login', methods=['POST'])
+def schedule_login():
+    data = request.get_json(silent=True) or {}
+    code = data.get('code', '')
+    if not isinstance(code, str) or len(code) != 3 or any(c not in '0123456789' for c in code):
+        return schedule_error('three_digits')
+    with _schedule_access_lock:
+        emp = Employee.query.filter_by(employee_id=data.get('employee_id'), is_active=True).first()
+        access = db.session.get(ScheduleAccess, emp.id) if emp else None
+        if not access:
+            return schedule_error('unissued', 403)
+        now = time_module.time()
+        if access.locked_until > now:
+            return schedule_error('locked', 429)
+        if access.locked_until:
+            access.failures = 0
+            access.locked_until = 0
+        if not check_password_hash(access.code_hash, code):
+            access.failures += 1
+            if access.failures >= 5:
+                access.locked_until = now + 600
+            db.session.commit()
+            return schedule_error('locked' if access.failures >= 5 else 'wrong', 429 if access.failures >= 5 else 403)
+        access.failures = 0
+        ScheduleSession.query.filter(ScheduleSession.last_active <= now - SCHEDULE_IDLE_SECONDS).delete()
+        token = secrets.token_urlsafe(32)
+        db.session.add(ScheduleSession(token_hash=hashlib.sha256(token.encode()).hexdigest(), employee_id=emp.id, last_active=now))
+        db.session.commit()
+        return jsonify(ok=True, token=token, name=emp.name)
+
+
+@app.route('/api/schedule/access/logout', methods=['POST'])
+def schedule_logout():
+    token = request.headers.get('X-Schedule-Token', '')
+    ScheduleSession.query.filter_by(token_hash=hashlib.sha256(token.encode()).hexdigest()).delete()
+    db.session.commit()
+    return jsonify(ok=True)
+
+
+@app.route('/api/schedule/access/keepalive', methods=['POST'])
+def schedule_keepalive():
+    return jsonify(ok=True) if schedule_identity() else schedule_error('expired', 401)
+
+
 @app.route('/api/schedule/preferences/<employee_id>', methods=['GET'])
 def api_get_preferences(employee_id):
     """Get preferences for an employee for next month."""
-    emp = Employee.query.filter_by(employee_id=employee_id, is_active=True).first()
+    emp = schedule_identity()
     if not emp:
-        return jsonify({'ok': False}), 404
+        return schedule_error('expired', 401)
+    if emp.employee_id != employee_id:
+        return schedule_error('own_only', 403)
 
     first_day, last_day = next_month_range()
     prefs = SchedulePreference.query.filter(
@@ -1061,13 +1297,22 @@ def api_get_preferences(employee_id):
 @app.route('/api/schedule/preferences', methods=['POST'])
 def api_save_preferences():
     """Save multiple preferences at once."""
-    data = request.get_json()
-    employee_id = data.get('employee_id')
-    prefs = data.get('preferences', {})  # {'2026-07-01': 'want_work', ...}
-
-    emp = Employee.query.filter_by(employee_id=employee_id, is_active=True).first()
+    data = request.get_json(silent=True) or {}
+    emp = schedule_identity()
     if not emp:
-        return jsonify({'ok': False, 'msg': '员工不存在'}), 404
+        return schedule_error('expired', 401)
+    if data.get('employee_id') != emp.employee_id:
+        return schedule_error('own_only', 403)
+    prefs = data.get('preferences', {})
+    first, last = next_month_range()
+    if not isinstance(prefs, dict) or not prefs:
+        return schedule_error('failed')
+    try:
+        for day, pref in prefs.items():
+            if not first <= date.fromisoformat(day) <= last or pref not in ('want_work', 'want_off', 'flexible'):
+                return schedule_error('failed')
+    except (TypeError, ValueError):
+        return schedule_error('failed')
 
     try:
         for date_str, pref in prefs.items():
@@ -1081,6 +1326,8 @@ def api_save_preferences():
                 db.session.add(SchedulePreference(
                     employee_id=emp.id, date=dt_date, preference=pref
                 ))
+        token = request.headers.get('X-Schedule-Token', '')
+        ScheduleSession.query.filter_by(token_hash=hashlib.sha256(token.encode()).hexdigest()).delete()
         db.session.commit()
         return jsonify({'ok': True})
     except Exception as e:
@@ -1112,7 +1359,7 @@ def api_auto_schedule():
     employees = Employee.query.filter_by(is_active=True).all()
 
     # Classify employees
-    regulars = [e for e in employees if '全职' in (e.department or '')]
+    regulars = [e for e in employees if e.employment_type == 'regular']
     temps = [e for e in employees if e not in regulars]
 
     # Load all preferences for next month
@@ -1156,13 +1403,13 @@ def api_auto_schedule():
                         break
                 if emp.id not in pref_map or d not in pref_map[emp.id]:
                     # 上月没有对应天数的数据
-                    if '全职' in (emp.department or ''):
+                    if emp.employment_type == 'regular':
                         if d.weekday() < 5:
                             pref_map.setdefault(emp.id, {})[d] = 'want_work'
                         else:
                             pref_map.setdefault(emp.id, {})[d] = 'want_off'
                 d += timedelta(days=1)
-        elif '全职' in (emp.department or ''):
+        elif emp.employment_type == 'regular':
             # 完全没数据 + 全职 → 默认周休二
             d = first_day
             while d <= last_day:
@@ -1190,45 +1437,30 @@ def api_auto_schedule():
 
         assigned = set()
 
-        # Phase 1: Assign must-work people
+        # Formal employees take priority over part-time employees, regardless
+        # of the latter's submitted work preference. Rest/continuous-work
+        # constraints apply before either group is considered.
+        eligible = [e for e in employees
+                    if pref_map.get(e.id, {}).get(current) != 'want_off'
+                    and consec_work.get(e.id, 0) < 5]
+        regular_pool = [e for e in eligible if e.employment_type == 'regular']
+        part_time_pool = [e for e in eligible if e.employment_type != 'regular']
+
+        # Keep formal employees' requested/default working days even when
+        # they exceed the minimum staffing requirement.
+        assigned.update(e.id for e in regular_pool
+                        if pref_map.get(e.id, {}).get(current) == 'want_work')
+        for pool in (regular_pool, part_time_pool):
+            candidates = [e for e in pool if e.id not in assigned]
+            candidates.sort(key=lambda e: (
+                0 if pref_map.get(e.id, {}).get(current) == 'want_work' else 1,
+                random.random()))
+            needed = max(0, min_staff - len(assigned))
+            assigned.update(e.id for e in candidates[:needed])
+
         for emp in employees:
-            pref = pref_map.get(emp.id, {}).get(current)
-            if pref == 'want_work':
-                assigned.add(emp.id)
-
-        # Phase 2: Fill with flexible people — ② 全职优先 + ③ 最多连5天
-        if len(assigned) < min_staff:
-            # Build pool: exclude want_off and employees who already worked 5+ consecutive days
-            flex_pool = []
-            for e in employees:
-                if e.id in assigned:
-                    continue
-                pref = pref_map.get(e.id, {}).get(current)
-                if pref == 'want_off':
-                    continue
-                # Check consecutive work limit
-                if consec_work.get(e.id, 0) >= 5:
-                    continue
-                flex_pool.append(e)
-            # Full-time employees first
-            flex_pool.sort(key=lambda e: (0 if '全职' in (e.department or '') else 1, random.random()))
-            needed = min_staff - len(assigned)
-            for emp in flex_pool[:needed]:
-                assigned.add(emp.id)
-
-        # Track consecutive work days
-        for emp in employees:
-            if emp.id in assigned:
-                consec_work[emp.id] = consec_work.get(emp.id, 0) + 1
-            else:
-                consec_work[emp.id] = 0
-
-        # Phase 3:        # Phase 3: Handle regular employees' 2-days-off requirement per week
-        for emp in regulars:
-            pref = pref_map.get(emp.id, {}).get(current)
-            if pref == 'want_off' and emp.id in assigned:
-                if len(assigned) - 1 >= min_staff:
-                    assigned.remove(emp.id)
+            consec_work[emp.id] = (consec_work.get(emp.id, 0) + 1
+                                   if emp.id in assigned else 0)
 
         # Check for shortage
         if len(assigned) < min_staff:

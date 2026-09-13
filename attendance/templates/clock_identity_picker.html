@@ -1,0 +1,2 @@
+<select id="employee-select" hidden aria-hidden="true" tabindex="-1">{% for emp in employees %}<option selected value="{{ emp.employee_id }}" data-name="{{ emp.name }}" data-dept="{{ emp.department }}">{{ emp.name }}</option>{% endfor %}</select>
+{% if clock_boot.theme not in ['classic','original'] %}<strong style="font-size:1.25rem">{{ employees[0].name }}</strong>{% endif %}

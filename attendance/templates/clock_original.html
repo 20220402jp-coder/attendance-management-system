@@ -279,14 +279,7 @@
                 <a href="{{ url_for('admin_employees') }}">{{ _('home.add_employee') }}</a>
             </div>
             {% endif %}
-            <select id="employee-select" {% if not employees %}disabled{% endif %}>
-                <option value="">— 选择员工 —</option>
-                {% for emp in employees %}
-                <option value="{{ emp.employee_id }}" data-name="{{ emp.name }}" data-dept="{{ emp.department }}">
-                    {{ emp.name }}{% if emp.department %} · {{ emp.department }}{% endif %}
-                </option>
-                {% endfor %}
-            </select>
+            {% include 'clock_identity_picker.html' %}
         </div>
 
         <!-- Name -->
@@ -318,5 +311,5 @@
 
 {% include 'clock_feedback.html' %}
 <script id="clock-boot" type="application/json">{{ clock_boot|tojson }}</script>
-<script type="module" src="/static/themes/clock.js?v=1"></script>
+<script type="module" src="/static/themes/clock.js?v=2"></script>
 {% endblock %}

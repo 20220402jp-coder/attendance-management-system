@@ -12,6 +12,7 @@ class Employee(db.Model):
     id           = db.Column(db.Integer, primary_key=True)
     employee_id  = db.Column(db.String(20), unique=True, nullable=False)
     name         = db.Column(db.String(100), nullable=False)
+    employment_type = db.Column(db.String(20), nullable=False, default='part_time')
     department   = db.Column(db.String(100), default='')
     lang         = db.Column(db.String(5), default='zh')
     is_active    = db.Column(db.Boolean, default=True)
@@ -197,3 +198,33 @@ class ClockTicket(db.Model):
     process_id = db.Column(db.String(32), nullable=False, default=lambda: __import__('os').environ.get('ATTENDANCE_PROCESS_ID', ''))
     result = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.now)
+
+
+class ScheduleAccess(db.Model):
+    """Hashed employee code and persistent guess limit."""
+    __tablename__ = 'schedule_access'
+    employee_id = db.Column(db.Integer, db.ForeignKey('employees.id'), primary_key=True)
+    code_hash = db.Column(db.String(255), nullable=False)
+    failures = db.Column(db.Integer, nullable=False, default=0)
+    locked_until = db.Column(db.Float, nullable=False, default=0)
+
+
+class ScheduleSession(db.Model):
+    __tablename__ = 'schedule_sessions'
+    token_hash = db.Column(db.String(64), primary_key=True)
+    employee_id = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=False)
+    last_active = db.Column(db.Float, nullable=False)
+
+
+class ClockSession(db.Model):
+    __tablename__ = 'clock_sessions'
+    token_hash = db.Column(db.String(64), primary_key=True)
+    employee_id = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=False)
+    last_active = db.Column(db.Float, nullable=False)
+
+
+class ClockAccessAttempt(db.Model):
+    __tablename__ = 'clock_access_attempts'
+    address = db.Column(db.String(64), primary_key=True)
+    failures = db.Column(db.Integer, nullable=False, default=0)
+    locked_until = db.Column(db.Float, nullable=False, default=0)

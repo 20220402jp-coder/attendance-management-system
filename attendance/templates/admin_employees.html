@@ -17,17 +17,15 @@
             <input type="text" id="form-name" required>
         </div>
         <div class="form-row">
-            <label>{{ _('admin.role') }}</label>
-            <select id="form-dept">
-                <option value="全职">{{ _('admin.fulltime') }}</option>
-                <option value="兼职">{{ _('admin.parttime') }}</option>
-                <option value="技术部">{{ _('admin.technical') }}</option>
-                <option value="销售部">{{ _('admin.sales') }}</option>
-                <option value="人事部">{{ _('admin.hr') }}</option>
-                <option value="财务部">{{ _('admin.finance') }}</option>
-                <option value="管理部">{{ _('admin.management') }}</option>
-                <option value="其他">{{ _('admin.other') }}</option>
+            <label for="form-employment">{{ _('admin.employment_type') }}</label>
+            <select id="form-employment">
+                <option value="regular">{{ _('admin.regular_employee') }}</option>
+                <option value="part_time">{{ _('admin.parttime') }}</option>
             </select>
+        </div>
+        <div class="form-row">
+            <label for="form-dept">{{ _('admin.department') }}</label>
+            <input type="text" id="form-dept" maxlength="100">
         </div>
         <div class="form-row">
             <label>{{ _('admin.lang') }}</label>
@@ -50,7 +48,7 @@
                 <tr>
                     <th>{{ _('admin.employee_id') }}</th>
                     <th>{{ _('admin.name') }}</th>
-                    <th>{{ _('admin.role') }}</th>
+                    <th>{{ _('admin.employment_type') }}</th><th>{{ _('admin.department') }}</th>
                     <th>{{ _('admin.lang') }}</th>
                     <th>{{ _('admin.active') }}</th>
                     <th>{{ _('admin.schedule') }}</th>
@@ -62,12 +60,13 @@
                 <tr>
                     <td>{{ emp.employee_id }}</td>
                     <td>{{ emp.name }}</td>
-                    <td>{{ emp.department }}</td>
+                    <td>{{ _('admin.regular_employee') if emp.employment_type == 'regular' else _('admin.parttime') }}</td><td>{{ emp.department }}</td>
                     <td>{{ emp.lang }}</td>
                     <td>{{ '✅' if emp.is_active else '❌' }}</td>
                     <td><button class="btn btn-sm" onclick="editSchedule({{ emp.id }}, '{{ emp.employee_id }}')">📅 {{ _('admin.schedule') }}</button></td>
                     <td>
-                        <button class="btn btn-sm" onclick="editEmployee({{ emp.id }}, '{{ emp.employee_id }}', '{{ emp.name }}', '{{ emp.department }}', '{{ emp.lang }}')">✏️</button>
+                        <button class="btn btn-sm" onclick='editEmployee({{ emp.id|tojson }}, {{ emp.employee_id|tojson }}, {{ emp.name|tojson }}, {{ emp.department|tojson }}, {{ emp.lang|tojson }}, {{ emp.employment_type|tojson }})'>✏️</button>
+                        <button class="btn btn-sm" onclick='issueCode({{ emp.id|tojson }}, {{ emp.name|tojson }})'>{{ _('access.code_action') }}</button>
                         <button class="btn btn-sm btn-danger" onclick="deleteEmployee({{ emp.id }})">🗑️</button>
                     </td>
                 </tr>
@@ -91,7 +90,38 @@
     </div>
 </div>
 
+<dialog id="reset-code-dialog" style="border:0;border-radius:16px;padding:28px;max-width:360px;width:85%;text-align:center">
+<p id="reset-code-name"></p><p>{{ _('access.reset_confirm') }}</p>
+<button class="btn btn-primary" onclick="confirmIssueCode()">{{ _('access.code_action') }}</button>
+<button class="btn" onclick="document.getElementById('reset-code-dialog').close()">{{ _('admin.cancel') }}</button>
+</dialog>
+<dialog id="code-dialog" style="border:0;border-radius:16px;padding:28px;max-width:360px;width:85%;text-align:center">
+<h3 id="issued-name"></h3><div id="issued-code" style="font-size:52px;letter-spacing:12px;font-weight:bold"></div>
+<p>{{ _('access.code_note') }}</p><button class="btn btn-primary" onclick="document.getElementById('code-dialog').close()">{{ _('access.close') }}</button>
+</dialog>
 <script>
+document.getElementById('code-dialog').addEventListener('close',()=>{document.getElementById('issued-code').textContent='';});
+let issuingCode=false;
+let pendingCodeEmployee=null;
+function issueCode(id,name){
+    pendingCodeEmployee={id,name};
+    document.getElementById('reset-code-name').textContent=name;
+    document.getElementById('reset-code-dialog').showModal();
+}
+async function confirmIssueCode(){
+    if(issuingCode || !pendingCodeEmployee)return;
+    const {id,name}=pendingCodeEmployee;
+    document.getElementById('reset-code-dialog').close();
+    issuingCode=true;
+    try{
+        const r=await fetch('/api/employee/'+id+'/schedule-code',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+        const data=await r.json();if(!r.ok || !data.ok)throw new Error(data.msg || tr('access.failed'));
+        document.getElementById('issued-name').textContent=name;
+        document.getElementById('issued-code').textContent=data.code;
+        document.getElementById('code-dialog').showModal();
+    }catch(error){alert(error.message);}finally{issuingCode=false;}
+}
+
 let editingId = null;
 
 function showAddForm() {
@@ -99,7 +129,8 @@ function showAddForm() {
     document.getElementById('edit-id').value = '';
     document.getElementById('form-eid').value = '';
     document.getElementById('form-name').value = '';
-    document.getElementById('form-dept').value = '全职';
+    document.getElementById('form-dept').value = '';
+    document.getElementById('form-employment').value = 'regular';
     document.getElementById('form-lang').value = 'zh';
     document.getElementById('form-title').textContent = '{{ _('admin.add_employee') }}';
     document.getElementById('employee-form').style.display = 'block';
@@ -109,12 +140,13 @@ function hideForm() {
     document.getElementById('employee-form').style.display = 'none';
 }
 
-function editEmployee(id, eid, name, dept, lang) {
+function editEmployee(id, eid, name, dept, lang, employmentType) {
     editingId = id;
     document.getElementById('edit-id').value = id;
     document.getElementById('form-eid').value = eid;
     document.getElementById('form-name').value = name;
-    document.getElementById('form-dept').value = dept;
+    document.getElementById('form-dept').value = dept || '';
+    document.getElementById('form-employment').value = employmentType;
     document.getElementById('form-lang').value = lang || 'zh';
     document.getElementById('form-title').textContent = '{{ _('admin.edit_employee') }}';
     document.getElementById('employee-form').style.display = 'block';
@@ -136,11 +168,13 @@ function saveEmployee() {
             employee_id: eid,
             name: name,
             department: document.getElementById('form-dept').value.trim(),
+            employment_type: document.getElementById('form-employment').value,
             lang: document.getElementById('form-lang').value,
         })
     }).then(r => r.json()).then(data => {
         if (data.ok) location.reload();
-    });
+        else alert(data.msg || tr('admin.save_failed'));
+    }).catch(() => alert(tr('admin.save_failed')));
 }
 
 function deleteEmployee(id) {

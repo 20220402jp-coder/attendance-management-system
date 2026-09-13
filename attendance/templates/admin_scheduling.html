@@ -22,11 +22,17 @@
 .req-day-header { text-align: center; font-size: 0.75rem; color: var(--text-secondary); padding: 4px 0; }
 .req-day {
     border: 2px solid var(--border); border-radius: 8px; text-align: center;
-    padding: 8px 4px; cursor: pointer; font-size: 0.85rem;
+    padding: 8px 4px; cursor: default; font-size: 0.85rem;
 }
 .req-day:hover { border-color: var(--primary); }
 .req-day .day-num { font-weight: 600; font-size: 1rem; display: block; }
 .req-day .req-val { font-size: 0.75rem; color: var(--text-secondary); }
+.req-adjust { display:flex;align-items:center;justify-content:center;gap:5px;margin-top:5px; }
+.req-adjust button { border:1px solid var(--border);border-radius:5px;background:white;color:var(--primary);min-width:26px;height:28px;cursor:pointer; }
+.req-adjust button:disabled { opacity:.3;cursor:default; }
+.req-adjust button:focus-visible { outline:2px solid var(--primary);outline-offset:2px; }
+.req-adjust .req-val { min-width:18px;font-variant-numeric:tabular-nums; }
+@media(max-width:600px){.req-calendar-wrap{padding:12px 5px}.req-grid{gap:2px}.req-day{padding:6px 0}.req-adjust{gap:0}.req-adjust button{min-width:15px;padding:0;height:28px;font-size:9px}.req-adjust .req-val{min-width:14px;font-size:11px}}
 .req-day.override { border-color: var(--primary); background: #eff6ff; }
 .req-day.short { border-color: var(--danger); background: #fef2f2; }
 .req-day.off-month { opacity: 0.2; pointer-events: none; }
@@ -67,6 +73,14 @@
 .sched-cell.drag-over { outline: 3px solid var(--primary); outline-offset: -2px; }
 .sched-cell.locked { cursor: default; }
 .count-cell.short { color: var(--danger); font-weight: 700; }
+.result-table.crosshair-active td:not(.crosshair-axis) { color:#8b97a5; }
+.result-table .crosshair-axis { background:#e8eef5;color:#243b53 !important;box-shadow:inset 0 0 0 1px #7895b5;font-weight:600; }
+.result-table .working.crosshair-axis { background:#a7edcf;color:#075438 !important; }
+.result-table .off-day.crosshair-axis { background:#ffc5d0;color:#8b2341 !important; }
+.result-table .crosshair-center { box-shadow:inset 0 0 0 2px #243b53;font-weight:800; }
+.result-table .working.crosshair-center { background:#6ed9ad;color:#043d28 !important; }
+.result-table .off-day.crosshair-center { background:#ff9fb4;color:#65172e !important; }
+@media print { .result-table .crosshair-axis,.result-table .crosshair-center { box-shadow:none; } }
 #progress-area { text-align: center; padding: 40px; color: var(--text-secondary); }
 </style>
 {% endblock %}
@@ -77,7 +91,7 @@
     <p class="sched-subtitle">{{ first_day.strftime('%Y-%m') }}</p>
     <div class="sched-controls">
         <label>{{ _('schedule.min_staff') }}:</label>
-        <input type="number" id="default-min" value="5" min="1" max="7">
+        <input type="number" id="default-min" value="5" min="1" step="1" oninput="drawCal()">
         <button class="btn btn-primary" onclick="runSchedule()">⚡ {{ _('schedule.run') }}</button>
     </div>
     <div class="req-calendar-wrap">
@@ -123,18 +137,18 @@ function drawCal() {
         if (conflictDates[ds]) cls += ' short';
         if (ds in dayReqs) cls += ' override';
         const rv = ds in dayReqs ? dayReqs[ds] : v;
-        h += `<div class="${cls}" onclick="cDay('${ds}')">${d}<br><small>${rv} ${tr('schedule.people')}</small></div>`;
+        h += `<div class="${cls}"><span class="day-num">${d}</span><div class="req-adjust"><button type="button" id="less-${ds}" aria-label="${ds} ${tr('schedule.decrease')}" onclick="adjustDay('${ds}',-1)" ${rv<=1?'disabled':''}>▼</button><span class="req-val" aria-live="polite">${rv}</span><button type="button" id="more-${ds}" aria-label="${ds} ${tr('schedule.increase')}" onclick="adjustDay('${ds}',1)">▲</button></div><small>${tr('schedule.people')}</small></div>`;
     }
-    const tr = (7 - ((b + dim) % 7)) % 7;
-    for (let i = 0; i < tr; i++) h += '<div class="req-day off-month"></div>';
+    const trailingCells = (7 - ((b + dim) % 7)) % 7;
+    for (let i = 0; i < trailingCells; i++) h += '<div class="req-day off-month"></div>';
     document.getElementById('req-grid').innerHTML = h;
 }
-function cDay(ds) {
-    const c = dayReqs[ds];
-    if (c === undefined) dayReqs[ds] = 1;
-    else if (c >= 7) delete dayReqs[ds];
-    else dayReqs[ds] = c + 1;
+function adjustDay(ds, delta) {
+    const current = ds in dayReqs ? dayReqs[ds] : dflt();
+    dayReqs[ds] = Math.max(1, current + delta);
     drawCal();
+    const target = document.getElementById((delta > 0 ? 'more-' : 'less-') + ds);
+    if (!target.disabled) target.focus({preventScroll:true});
 }
 
 // ── Schedule ──────────────────────────────────────────
@@ -182,6 +196,7 @@ function cnt(ds) {
 }
 
 function render(sched, grid) {
+    clearCrosshair();
     if (!grid) grid = gridData;
     if (!grid || !grid.employees) {
         document.getElementById('result-area').innerHTML = '<p id="progress-area">' + tr('schedule.no_data') + '</p>';
@@ -195,7 +210,7 @@ function render(sched, grid) {
     function _fmtLocal(d) {
         return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
     }
-    let d = _localDate(gFirst);
+    let d = new Date(gFirst.getTime());
     while (d <= gLast) { days.push(_fmtLocal(d)); d.setDate(d.getDate() + 1); }
 
     const v = dflt();
@@ -238,7 +253,7 @@ function render(sched, grid) {
     }
     html += '<th>' + tr('schedule.attendance') + '</th></tr></thead><tbody>';
 
-    html += '<tr><td><strong>👥</strong></td>';
+    html += '<tr><td><strong>👥</strong></td><td></td>';
     let tw = 0;
     for (const ds of days) {
         const n = cnt(ds);
@@ -398,6 +413,35 @@ function dsDrop(e, teid, tds) {
     pending[tk] = sw;
     render(null, gridData);
 }
+
+// Highlight the employee row and date column without changing attendance.
+let crosshairCell = null;
+function clearCrosshair() {
+    const table = document.getElementById('schedule-table');
+    table?.classList.remove('crosshair-active');
+    table?.querySelectorAll('.crosshair-axis,.crosshair-center').forEach(cell => {
+        cell.classList.remove('crosshair-axis', 'crosshair-center');
+    });
+    crosshairCell = null;
+}
+function highlightCrosshair(cell) {
+    if (cell === crosshairCell) return;
+    clearCrosshair();
+    const table = cell.closest('table');
+    if (!table) return;
+    crosshairCell = cell;
+    table.classList.add('crosshair-active');
+    for (const item of cell.parentElement.cells) item.classList.add('crosshair-axis');
+    for (const row of table.rows) row.cells[cell.cellIndex]?.classList.add('crosshair-axis');
+    cell.classList.add('crosshair-center');
+}
+document.getElementById('result-area').addEventListener('pointerover', event => {
+    const cell = event.target.closest('.sched-cell');
+    if (cell) highlightCrosshair(cell);
+    else clearCrosshair();
+});
+document.getElementById('result-area').addEventListener('pointerleave', clearCrosshair);
+document.getElementById('result-area').addEventListener('dragstart', clearCrosshair);
 
 // ── Init ──────────────────────────────────────────────
 
