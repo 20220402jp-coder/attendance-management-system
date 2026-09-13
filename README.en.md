@@ -43,13 +43,15 @@ This system is made for small businesses that need a simple attendance and shift
 
 <h2>2. Unzip the downloaded file</h2>
 
+On Windows (the most common case), open Downloads, right-click the `Windows-x64.exe.zip` file, choose “Extract All”, and click “Extract”. Open the new folder and run the `.exe` inside. Do not run it from the ZIP preview or copy only the `.exe` to another folder.
+
 <h2>3. Double-click the program inside</h2>
 
 The program opens a web page automatically. The first time you use it, open “Admin → Employee Management” and add your employees. Close the program window to stop the system.
 
 ### If Windows shows a security warning
 
-Click “More info”, then click “Run anyway”.
+Confirm the file came from this project's GitHub release page, then click “More info” → “Run anyway”. If “More info” is not shown, download the file again from the release page. A black program window must stay open while the system is running.
 
 ### If the program will not open on a Mac
 
