@@ -6,7 +6,7 @@ This system is made for small businesses that need a simple attendance and shift
 
 ## Current version and features
 
-The published download is **v1.0.2**, including personal-code availability, QR-code clock-in, and access-control updates.
+The published download is **v1.0.3**, including personal-code availability, QR-code clock-in, and access-control updates.
 
 - Employee management, weekly working hours, availability, automatic scheduling, attendance corrections and report export.
 - **11 selectable clock designs**, including the original page. Every design has a success animation.
@@ -29,13 +29,13 @@ Style settings can currently be managed only on the host computer. A complete ad
 
 <h1>Download</h1>
 
-<h2>🪟 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.2/AttendanceSystem-1.0.2-Windows-x64.exe.zip">Download for Windows</a></h2>
+<h2>🪟 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.3/AttendanceSystem-1.0.3-Windows-x64.exe.zip">Download for Windows</a></h2>
 
-<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.2/AttendanceSystem-1.0.2-macOS-arm64.zip">Download for Mac (M1, M2, M3 or M4)</a></h2>
+<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.3/AttendanceSystem-1.0.3-macOS-arm64.zip">Download for Mac (M1, M2, M3 or M4)</a></h2>
 
-<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.2/AttendanceSystem-1.0.2-macOS-x64.zip">Download for an Intel Mac</a></h2>
+<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.3/AttendanceSystem-1.0.3-macOS-x64.zip">Download for an Intel Mac</a></h2>
 
-<h2>🐧 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.2/AttendanceSystem-1.0.2-Linux-x64.zip">Download for Linux</a></h2>
+<h2>🐧 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.3/AttendanceSystem-1.0.3-Linux-x64.zip">Download for Linux</a></h2>
 
 <h1>How to use it</h1>
 

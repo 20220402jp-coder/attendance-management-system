@@ -6,7 +6,7 @@ This guide explains each feature. For a new installation, complete the steps in 
 
 ## 1. Windows: download, extract, start and stop
 
-1. Download the Windows ZIP from the v1.0.2 GitHub release page.
+1. Download the Windows ZIP from the v1.0.3 GitHub release page.
 2. Open Downloads, right-click the ZIP, choose “Extract All”, and click “Extract”.
 3. Open the new folder and double-click the `.exe` inside. Do not run it from the ZIP preview or copy only the executable.
 4. If Windows shows “Windows protected your PC”, confirm the file came from this release page, then choose “More info” → “Run anyway”.
@@ -14,14 +14,14 @@ This guide explains each feature. For a new installation, complete the steps in 
 
 ## 2. macOS: download, extract, start and stop
 
-1. Choose macOS-arm64 for Apple silicon or macOS-x64 for Intel from the v1.0.2 release page.
+1. Choose macOS-arm64 for Apple silicon or macOS-x64 for Intel from the v1.0.3 release page.
 2. Double-click the ZIP, open the extracted folder, and run the program inside.
 3. If macOS blocks it, right-click and choose “Open”. If it remains blocked, use “System Settings → Privacy & Security → Open Anyway”, then right-click “Open” once more.
 4. If macOS says there is no application to open it, use the Terminal method in section 16. Keep Terminal open while the system runs.
 
 ## 3. Linux: download, extract, start and stop
 
-1. Download the Linux-x64 ZIP from the v1.0.2 release page.
+1. Download the Linux-x64 ZIP from the v1.0.3 release page.
 2. Choose “Extract Here”, open the extracted folder, and run in a terminal:
 
 ```bash
@@ -35,7 +35,7 @@ Employees, schedules and clock records are saved automatically. The downloads al
 
 ## 4. First-time setup
 
-1. On the GitHub v1.0.2 release page, download the ZIP matching your operating system and processor: Windows, macOS Apple silicon, macOS Intel, or Linux.
+1. On the GitHub v1.0.3 release page, download the ZIP matching your operating system and processor: Windows, macOS Apple silicon, macOS Intel, or Linux.
 2. Extract it: right-click and choose “Extract All” on Windows, double-click the ZIP on macOS, or choose “Extract Here” on Linux. Open the new folder and run the program inside. Do not run it from the ZIP preview or copy only the executable.
 3. Open `http://127.0.0.1:5000/admin/`.
 2. Open “Employee Management”.
