@@ -242,6 +242,7 @@
   "admin.regular_employee": "正式员工（正社员）",
   "admin.invalid_employment_type": "请选择有效的员工身份",
   "admin.save_failed": "保存失败，请重试",
+  "admin.delete_failed": "删除失败，请重试",
   "schedule.decrease": "减少人数",
   "schedule.increase": "增加人数",
   "access.title": "个人报班",

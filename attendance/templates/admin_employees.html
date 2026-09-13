@@ -180,9 +180,12 @@ function saveEmployee() {
 function deleteEmployee(id) {
     if (!confirm(tr('admin.confirm_delete'))) return;
     fetch('/api/employee/' + id, {method: 'DELETE'})
-        .then(r => r.json()).then(data => {
+        .then(async r => {
+            const data = await r.json();
             if (data.ok) location.reload();
-        });
+            else alert(data.msg || tr('admin.delete_failed'));
+        })
+        .catch(() => alert(tr('admin.delete_failed')));
 }
 
 // Schedule: monthly view

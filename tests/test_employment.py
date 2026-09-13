@@ -42,3 +42,24 @@ def test_regular_priority_over_part_time_work_requests(tmp_path, monkeypatch):
     assert c.post('/api/schedule/auto',json={'default_min':2}).json['ok']
     rows={e['employee_id']:e['days'] for e in c.get('/api/schedule/result').json['employees']}
     assert rows['R'][0]['working'] and rows['P'][0]['working']
+
+
+def test_employee_delete_removes_related_rows(tmp_path, monkeypatch):
+    app = load_app(tmp_path, monkeypatch)
+    c = app.app.test_client()
+    employee_id = c.post('/api/employee', json={'employee_id': 'DEL', 'name': '待删除'}).json['id']
+    models = importlib.import_module('models')
+    with app.app.app_context():
+        employee = models.db.session.get(models.Employee, employee_id)
+        models.db.session.add_all([
+            models.SchedulePreference(employee_id=employee_id, date=app.date(2026, 10, 1), preference='flexible'),
+            models.ScheduleAssignment(employee_id=employee_id, date=app.date(2026, 10, 1), is_working=True),
+            models.ScheduleAccess(employee_id=employee_id, code_hash='unused'),
+        ])
+        models.db.session.commit()
+    response = c.delete(f'/api/employee/{employee_id}')
+    assert response.status_code == 200 and response.json['ok']
+    with app.app.app_context():
+        assert models.db.session.get(models.Employee, employee_id) is None
+        assert models.SchedulePreference.query.filter_by(employee_id=employee_id).count() == 0
+        assert models.ScheduleAssignment.query.filter_by(employee_id=employee_id).count() == 0

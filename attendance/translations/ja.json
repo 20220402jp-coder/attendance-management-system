@@ -242,6 +242,7 @@
   "admin.regular_employee": "正社員",
   "admin.invalid_employment_type": "有効な雇用区分を選択してください",
   "admin.save_failed": "保存できませんでした。再試行してください。",
+  "admin.delete_failed": "削除できませんでした。再試行してください。",
   "schedule.decrease": "人数を減らす",
   "schedule.increase": "人数を増やす",
   "access.title": "シフト希望登録",

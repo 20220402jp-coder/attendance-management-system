@@ -648,12 +648,21 @@ def api_update_employee(eid):
 @app.route('/api/employee/<int:eid>', methods=['DELETE'])
 def api_delete_employee(eid):
     emp = Employee.query.get_or_404(eid)
-    ScheduleSession.query.filter_by(employee_id=eid).delete()
-    ClockSession.query.filter_by(employee_id=eid).delete()
-    ScheduleAccess.query.filter_by(employee_id=eid).delete()
-    db.session.delete(emp)
-    db.session.commit()
-    return jsonify({'ok': True})
+    try:
+        ScheduleSession.query.filter_by(employee_id=eid).delete(synchronize_session=False)
+        ClockSession.query.filter_by(employee_id=eid).delete(synchronize_session=False)
+        ScheduleAccess.query.filter_by(employee_id=eid).delete(synchronize_session=False)
+        SchedulePreference.query.filter_by(employee_id=eid).delete(synchronize_session=False)
+        ScheduleAssignment.query.filter_by(employee_id=eid).delete(synchronize_session=False)
+        Schedule.query.filter_by(employee_id=eid).delete(synchronize_session=False)
+        AttendanceRecord.query.filter_by(employee_id=eid).delete(synchronize_session=False)
+        db.session.delete(emp)
+        db.session.commit()
+        return jsonify({'ok': True})
+    except Exception:
+        db.session.rollback()
+        logger.exception('删除员工失败: %s', eid)
+        return jsonify({'ok': False, 'msg': load_translations(get_lang())['admin.delete_failed']}), 500
 
 
 @app.route('/api/employee/<int:eid>/schedules', methods=['GET', 'POST'])

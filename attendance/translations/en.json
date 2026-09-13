@@ -242,6 +242,7 @@
   "admin.regular_employee": "Regular employee",
   "admin.invalid_employment_type": "Select a valid employment type",
   "admin.save_failed": "Could not save. Please retry.",
+  "admin.delete_failed": "Could not delete. Please retry.",
   "schedule.decrease": "Decrease staff",
   "schedule.increase": "Increase staff",
   "access.title": "My availability",
