@@ -4,7 +4,7 @@
 
 ## 現在のバージョンと機能
 
-公開済みのダウンロード版は **v1.0.1** です。以下の画面スタイル機能は `main` ブランチのソースに追加済みですが、上記の配布ファイルにはまだ含まれていません。新機能は [開発説明](DEVELOPMENT.md) に従ってソースから起動してください。ソースからの起動には Python が必要です。配布済みの実行ファイルには不要です。
+公開済みのダウンロード版は **v1.0.2** です。個人コードによるシフト希望、QRコード打刻、アクセス制御の更新を含みます。ソースからの起動には Python が必要です。配布済みの実行ファイルには不要です。
 
 - 従業員管理、曜日別の勤務時間、希望提出、自動シフト作成、打刻修正、集計のエクスポート。
 - 原版を含む **11 種類の打刻画面**。すべてに成功アニメーションがあり、SF と着物の画面は Three.js を使用します。
@@ -27,13 +27,13 @@
 
 <h1>ダウンロード</h1>
 
-<h2>🪟 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.1/AttendanceSystem-1.0.1-Windows-x64.exe.zip">Windowsはこちらからダウンロード</a></h2>
+<h2>🪟 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.2/AttendanceSystem-1.0.2-Windows-x64.exe.zip">Windowsはこちらからダウンロード</a></h2>
 
-<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.1/AttendanceSystem-1.0.1-macOS-arm64.zip">Macはこちらからダウンロード（M1、M2、M3、M4）</a></h2>
+<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.2/AttendanceSystem-1.0.2-macOS-arm64.zip">Macはこちらからダウンロード（M1、M2、M3、M4）</a></h2>
 
-<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.1/AttendanceSystem-1.0.1-macOS-x64.zip">Intel搭載Macはこちらからダウンロード</a></h2>
+<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.2/AttendanceSystem-1.0.2-macOS-x64.zip">Intel搭載Macはこちらからダウンロード</a></h2>
 
-<h2>🐧 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.1/AttendanceSystem-1.0.1-Linux-x64.zip">Linuxはこちらからダウンロード</a></h2>
+<h2>🐧 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.2/AttendanceSystem-1.0.2-Linux-x64.zip">Linuxはこちらからダウンロード</a></h2>
 
 シンプルな勤怠・シフト管理を必要とする小規模事業者向けのシステムです。中国語、英語、日本語に対応しています。
 

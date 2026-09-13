@@ -4,7 +4,7 @@
 
 ## Current version and features
 
-The published download is **v1.0.1**. The page-style features below are in the `main` source branch and have not been packaged into those downloads yet. Run the source using [Development instructions](DEVELOPMENT.md) to try them. Source startup requires Python; packaged downloads do not.
+The published download is **v1.0.2**, including personal-code availability, QR-code clock-in, and access-control updates. Source startup requires Python; packaged downloads do not.
 
 - Employee management, weekly working hours, availability, automatic scheduling, attendance corrections and report export.
 - **11 selectable clock designs**, including the original page. Every design has a success animation; the sci-fi and kimono designs use Three.js.
@@ -27,13 +27,13 @@ Style settings can currently be managed only on the host computer. A complete ad
 
 <h1>Download</h1>
 
-<h2>🪟 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.1/AttendanceSystem-1.0.1-Windows-x64.exe.zip">Download for Windows</a></h2>
+<h2>🪟 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.2/AttendanceSystem-1.0.2-Windows-x64.exe.zip">Download for Windows</a></h2>
 
-<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.1/AttendanceSystem-1.0.1-macOS-arm64.zip">Download for Mac (M1, M2, M3 or M4)</a></h2>
+<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.2/AttendanceSystem-1.0.2-macOS-arm64.zip">Download for Mac (M1, M2, M3 or M4)</a></h2>
 
-<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.1/AttendanceSystem-1.0.1-macOS-x64.zip">Download for an Intel Mac</a></h2>
+<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.2/AttendanceSystem-1.0.2-macOS-x64.zip">Download for an Intel Mac</a></h2>
 
-<h2>🐧 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.1/AttendanceSystem-1.0.1-Linux-x64.zip">Download for Linux</a></h2>
+<h2>🐧 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.2/AttendanceSystem-1.0.2-Linux-x64.zip">Download for Linux</a></h2>
 
 This system is made for small businesses that need a simple attendance and shift management tool. It supports Chinese, English and Japanese.
 

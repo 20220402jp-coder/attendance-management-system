@@ -4,7 +4,7 @@
 
 ## 当前版本与功能
 
-已发布下载包为 **v1.0.1**。下列页面样式功能已加入 `main` 分支源码，尚未重新打包到上述下载文件；要体验新功能，请按 [开发说明](DEVELOPMENT.md) 从源码启动。源码启动需要 Python，下载的成品程序不需要。
+已发布下载包为 **v1.0.2**，包含近期的个人码报班、扫码打卡和权限改动。源码启动需要 Python，下载的成品程序不需要。
 
 - 员工管理、每周工作时间、报班意向、自动排班、打卡修正及统计导出。
 - **11 款可选打卡页面**，保留经典原版；每款均有打卡成功动画，科幻和和服页面使用 Three.js。
@@ -27,13 +27,13 @@
 
 <h1>下载程序</h1>
 
-<h2>🪟 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.1/AttendanceSystem-1.0.1-Windows-x64.exe.zip">Windows 电脑点这里下载</a></h2>
+<h2>🪟 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.2/AttendanceSystem-1.0.2-Windows-x64.exe.zip">Windows 电脑点这里下载</a></h2>
 
-<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.1/AttendanceSystem-1.0.1-macOS-arm64.zip">Mac 电脑点这里下载（M1、M2、M3、M4 芯片）</a></h2>
+<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.2/AttendanceSystem-1.0.2-macOS-arm64.zip">Mac 电脑点这里下载（M1、M2、M3、M4 芯片）</a></h2>
 
-<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.1/AttendanceSystem-1.0.1-macOS-x64.zip">Intel 芯片的 Mac 点这里下载</a></h2>
+<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.2/AttendanceSystem-1.0.2-macOS-x64.zip">Intel 芯片的 Mac 点这里下载</a></h2>
 
-<h2>🐧 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.1/AttendanceSystem-1.0.1-Linux-x64.zip">Linux 电脑点这里下载</a></h2>
+<h2>🐧 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.2/AttendanceSystem-1.0.2-Linux-x64.zip">Linux 电脑点这里下载</a></h2>
 
 这是为需要简单考勤和排班工具的小企业制作的系统，支持中文、英文和日文。
 
