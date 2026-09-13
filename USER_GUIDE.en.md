@@ -14,8 +14,8 @@ Employees, schedules and clock records are saved automatically.
 
 ## 2. First-time setup
 
-1. On the GitHub v1.0.2 release page, download the file matching your computer. Windows users should choose the file containing `Windows-x64.exe`.
-2. On Windows, open Downloads, right-click the ZIP file, choose “Extract All”, and click “Extract”. Open the new folder and run the `.exe` inside. Do not run it from the ZIP preview or copy only the executable. macOS users can double-click the ZIP; Linux users can use “Extract Here”.
+1. On the GitHub v1.0.2 release page, download the ZIP matching your operating system and processor: Windows, macOS Apple silicon, macOS Intel, or Linux.
+2. Extract it: right-click and choose “Extract All” on Windows, double-click the ZIP on macOS, or choose “Extract Here” on Linux. Open the new folder and run the program inside. Do not run it from the ZIP preview or copy only the executable.
 3. Open `http://127.0.0.1:5000/admin/`.
 2. Open “Employee Management”.
 3. Add employees.

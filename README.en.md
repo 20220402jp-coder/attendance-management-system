@@ -43,7 +43,7 @@ This system is made for small businesses that need a simple attendance and shift
 
 <h2>2. Unzip the downloaded file</h2>
 
-On Windows (the most common case), open Downloads, right-click the `Windows-x64.exe.zip` file, choose “Extract All”, and click “Extract”. Open the new folder and run the `.exe` inside. Do not run it from the ZIP preview or copy only the `.exe` to another folder.
+Choose the ZIP for your operating system and processor. Extract it, then open the new folder and run the program inside. On Windows, right-click the ZIP and choose “Extract All”; on macOS, double-click the ZIP; on Linux, choose “Extract Here”. Do not run the program from the ZIP preview or copy only the executable.
 
 <h2>3. Double-click the program inside</h2>
 
