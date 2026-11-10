@@ -125,6 +125,9 @@ class ShiftBook:
         end_dt = datetime.combine(day, end_t)
         if end_dt <= start_dt:  # 跨夜班次，例如 22:00 – 06:00
             end_dt += timedelta(days=1)
+        # 建档当天：上班时间已过才添加的员工，当天不算应出勤，避免一建档就显示缺勤。
+        if employee.created_at and day == employee.created_at.date() and employee.created_at > start_dt:
+            return None
         return {
             'start': start_t.strftime('%H:%M'),
             'end': end_t.strftime('%H:%M'),

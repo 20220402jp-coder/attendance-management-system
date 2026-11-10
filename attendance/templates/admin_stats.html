@@ -24,7 +24,7 @@
             <label>{{ _('stats.end_date') }}</label>
             <input type="date" id="stats-end">
         </div>
-        <div class="filter-row">
+        <div class="filter-row" style="display:flex;flex-direction:row;flex-wrap:wrap;gap:8px;align-items:center;">
             <button class="btn btn-sm" onclick="setMonth(0)">{{ _('stats.this_month') }}</button>
             <button class="btn btn-sm" onclick="setMonth(-1)">{{ _('stats.last_month') }}</button>
             <button class="btn btn-primary" onclick="queryStats()">{{ _('stats.query') }}</button>

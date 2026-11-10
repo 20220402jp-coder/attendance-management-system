@@ -16,15 +16,15 @@
 
 <h1>ダウンロード</h1>
 
-<h2>🪟 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.4/AttendanceSystem-1.0.4-Windows-x64.exe.zip">Windows 用をダウンロード</a></h2>
+<h2>🪟 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.1.0/AttendanceSystem-1.1.0-Windows-x64.exe.zip">Windows 用をダウンロード</a></h2>
 
-<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.4/AttendanceSystem-1.0.4-macOS-arm64.zip">Mac 用をダウンロード（M1・M2・M3・M4）</a></h2>
+<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.1.0/AttendanceSystem-1.1.0-macOS-arm64.zip">Mac 用をダウンロード（M1・M2・M3・M4）</a></h2>
 
-<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.4/AttendanceSystem-1.0.4-macOS-x64.zip">Intel Mac 用をダウンロード</a></h2>
+<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.1.0/AttendanceSystem-1.1.0-macOS-x64.zip">Intel Mac 用をダウンロード</a></h2>
 
-<h2>🐧 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.4/AttendanceSystem-1.0.4-Linux-x64.zip">Linux 用をダウンロード</a></h2>
+<h2>🐧 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.1.0/AttendanceSystem-1.1.0-Linux-x64.zip">Linux 用をダウンロード</a></h2>
 
-現在ダウンロードできるのは v1.0.4 です。このページと使用説明は最新のソースコードに合わせて書かれており、一部の機能は次のバージョンから使えます。違いは[更新履歴](CHANGELOG.md)をご覧ください。
+現在のバージョンは v1.1.0 です。変更点は[更新履歴](CHANGELOG.md)をご覧ください。古いバージョンからは、プログラムを新しいものに置き換えるだけで移行できます。データはそのまま残り、自動で更新されます。
 
 <h1>使い方</h1>
 

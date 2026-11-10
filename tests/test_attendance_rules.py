@@ -155,3 +155,15 @@ def test_generated_schedule_decides_expected_days(tmp_path, monkeypatch):
     assert result[('E002', '2026-11-07')]['status'] == 'absent'   # rostered on a Saturday
     assert result[('E002', '2026-11-07')]['shift'] == '09:00–18:00'
     assert len([key for key in result if key[0] == 'E002']) == 1
+
+
+def test_employee_added_after_work_started_is_not_absent_that_day(tmp_path, monkeypatch):
+    module = load_app(tmp_path, monkeypatch)
+    client = module.app.test_client()
+    emp = add_employee(module, client, created=MONDAY)
+    models = importlib.import_module('models')
+    with module.app.app_context():
+        models.db.session.get(models.Employee, emp['id']).created_at = datetime(2026, 11, 9, 21, 0)
+        models.db.session.commit()
+    freeze(module, monkeypatch, datetime(2026, 11, 10, 8, 0))
+    assert [(r['date'], r['status']) for r in rows(client, MONDAY, date(2026, 11, 10))] == [('2026-11-10', 'pending')]

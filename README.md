@@ -16,15 +16,15 @@
 
 <h1>下载程序</h1>
 
-<h2>🪟 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.4/AttendanceSystem-1.0.4-Windows-x64.exe.zip">Windows 电脑点这里下载</a></h2>
+<h2>🪟 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.1.0/AttendanceSystem-1.1.0-Windows-x64.exe.zip">Windows 电脑点这里下载</a></h2>
 
-<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.4/AttendanceSystem-1.0.4-macOS-arm64.zip">Mac 电脑点这里下载（M1、M2、M3、M4 芯片）</a></h2>
+<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.1.0/AttendanceSystem-1.1.0-macOS-arm64.zip">Mac 电脑点这里下载（M1、M2、M3、M4 芯片）</a></h2>
 
-<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.4/AttendanceSystem-1.0.4-macOS-x64.zip">Intel 芯片的 Mac 点这里下载</a></h2>
+<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.1.0/AttendanceSystem-1.1.0-macOS-x64.zip">Intel 芯片的 Mac 点这里下载</a></h2>
 
-<h2>🐧 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.4/AttendanceSystem-1.0.4-Linux-x64.zip">Linux 电脑点这里下载</a></h2>
+<h2>🐧 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.1.0/AttendanceSystem-1.1.0-Linux-x64.zip">Linux 电脑点这里下载</a></h2>
 
-当前下载包是 v1.0.4。本页和使用说明按最新源码编写，其中一部分功能会随下一个版本提供，差别见[更新记录](CHANGELOG.md)。
+当前版本是 v1.1.0，改动见[更新记录](CHANGELOG.md)。从旧版本升级时，直接用新程序替换旧程序即可，数据会保留并自动升级。
 
 <h1>怎么使用</h1>
 
