@@ -16,15 +16,15 @@ An attendance clock for small shops and small companies. It runs on one computer
 
 <h1>Download</h1>
 
-<h2>🪟 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.4/AttendanceSystem-1.0.4-Windows-x64.exe.zip">Download for Windows</a></h2>
+<h2>🪟 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.1.0/AttendanceSystem-1.1.0-Windows-x64.exe.zip">Download for Windows</a></h2>
 
-<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.4/AttendanceSystem-1.0.4-macOS-arm64.zip">Download for Mac (M1, M2, M3 or M4)</a></h2>
+<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.1.0/AttendanceSystem-1.1.0-macOS-arm64.zip">Download for Mac (M1, M2, M3 or M4)</a></h2>
 
-<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.4/AttendanceSystem-1.0.4-macOS-x64.zip">Download for an Intel Mac</a></h2>
+<h2>🍎 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.1.0/AttendanceSystem-1.1.0-macOS-x64.zip">Download for an Intel Mac</a></h2>
 
-<h2>🐧 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.4/AttendanceSystem-1.0.4-Linux-x64.zip">Download for Linux</a></h2>
+<h2>🐧 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.1.0/AttendanceSystem-1.1.0-Linux-x64.zip">Download for Linux</a></h2>
 
-The current download is v1.0.4. This page and the user guide describe the latest source code; some features arrive with the next release. See the [Changelog](CHANGELOG.md) for the differences.
+The current version is v1.1.0; see the [Changelog](CHANGELOG.md). To upgrade, simply replace the old program with the new one. Your data is kept and upgraded automatically.
 
 <h1>How to use it</h1>
 
