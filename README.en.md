@@ -9,7 +9,8 @@ This system is made for small businesses that need a simple attendance and shift
 The published download is **v1.0.4**, including personal-code availability, QR-code clock-in, and access-control updates.
 
 - Employee management, weekly working hours, availability, automatic scheduling, attendance corrections and report export.
-- **11 selectable clock designs**, including the original page. Every design has a success animation.
+- **12 selectable clock designs**, including the original page and the new 3D "Tiny Planet". Every design has a success animation with a shared 3D entrance and confetti.
+- Clock pages, admin pages, the printable QR page, CSV export and messages are available in Chinese, Japanese and English.
 - Preview, apply and restore the previous design from Admin, while keeping the same employee clock URL.
 - Chinese, English and Japanese style management, with previews following the selected language.
 

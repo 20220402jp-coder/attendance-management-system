@@ -27,3 +27,6 @@ build/
 dist/
 release/
 *.spec
+
+# Local backups
+_backup/

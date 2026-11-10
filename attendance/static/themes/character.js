@@ -1,87 +1,224 @@
-import * as THREE from './vendor/three.module.js';
-export function mountCharacter(home,modalHost,dialog){
-const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;let bowStart=-100,renderer,scene,camera,rig,upper,head,petals=[],canvasParent=home;
-function resize(){if(!renderer)return;const w=canvasParent.clientWidth,h=canvasParent.clientHeight;if(!w||!h)return;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();}
-function mat(color,roughness=.65){return new THREE.MeshStandardMaterial({color,roughness});}
-function mesh(geo,material,parent,x=0,y=0,z=0){const m=new THREE.Mesh(geo,material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;}
-function ball(parent,material,x,y,z,sx,sy,sz){const m=mesh(new THREE.SphereGeometry(1,32,24),material,parent,x,y,z);m.scale.set(sx,sy,sz);return m;}
-function line(parent,pts,color,r=.014){const curve=new THREE.CatmullRomCurve3(pts.map(p=>new THREE.Vector3(...p)));return mesh(new THREE.TubeGeometry(curve,30,r,8,false),color,parent);}
-function flower(parent,x,y,z,size,color){const g=new THREE.Group();g.position.set(x,y,z);parent.add(g);for(let i=0;i<5;i++){const a=i*Math.PI*2/5;const p=ball(g,color,Math.sin(a)*size*.62,Math.cos(a)*size*.62,0,size*.45,size*.65,size*.19);p.rotation.z=-a;}ball(g,mat('#d3ad63'),0,0,size*.12,size*.21,size*.21,size*.16);return g;}
-function kimonoTexture(){
- const c=document.createElement('canvas');c.width=c.height=1024;const ctx=c.getContext('2d');
- const grad=ctx.createLinearGradient(0,0,0,1024);grad.addColorStop(0,'#f5cbb7');grad.addColorStop(.55,'#edaf94');grad.addColorStop(1,'#d98878');ctx.fillStyle=grad;ctx.fillRect(0,0,1024,1024);
- // Original camellia clusters, fine leaves and a woven dotted ground.
- ctx.fillStyle='#fff6e02b';for(let y=0;y<1024;y+=20)for(let x=0;x<1024;x+=20)ctx.fillRect(x,y,1,2);
- for(let i=0;i<15;i++){const x=(i*281+85)%1024,y=(i*187+120)%1024;ctx.save();ctx.translate(x,y);ctx.rotate(i*.9);
- ctx.fillStyle='#789f8b';for(const sign of [-1,1]){ctx.beginPath();ctx.ellipse(sign*31,16,21,7,sign*.5,0,Math.PI*2);ctx.fill();}
- for(let j=0;j<6;j++){ctx.save();ctx.rotate(j*Math.PI/3);ctx.fillStyle=i%3?'#fff4de':'#d9746e';ctx.beginPath();ctx.ellipse(0,13,12,18,0,0,Math.PI*2);ctx.fill();ctx.restore();}
- ctx.fillStyle='#e3b15b';ctx.beginPath();ctx.arc(0,0,7,0,Math.PI*2);ctx.fill();ctx.restore();}
- const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;return tex;
+// Kimono girl — a layered vector illustration (no WebGL needed).
+// Idle: breathing, blinking, hair and hair-ornament sway, eyes follow the pointer.
+// Success: she smiles and bows. API matches the old 3D character: {show, hide, replay}.
+const NS = 'http://www.w3.org/2000/svg';
+
+function sakura(cx, cy, r, fill, center = '#f6c35b', rot = 0) {
+  let petals = '';
+  for (let i = 0; i < 5; i++) {
+    const a = rot + i * 72;
+    petals += `<path transform="rotate(${a} ${cx} ${cy})" d="M${cx} ${cy} C${cx - r * 0.55} ${cy - r * 0.45} ${cx - r * 0.42} ${cy - r * 1.05} ${cx - r * 0.12} ${cy - r * 1.02} L${cx} ${cy - r * 0.86} L${cx + r * 0.12} ${cy - r * 1.02} C${cx + r * 0.42} ${cy - r * 1.05} ${cx + r * 0.55} ${cy - r * 0.45} ${cx} ${cy}Z" fill="${fill}"/>`;
+  }
+  return `<g>${petals}<circle cx="${cx}" cy="${cy}" r="${r * 0.2}" fill="${center}"/></g>`;
 }
-// Tapered sculpted locks, rather than rows of round primitives.
-function lock(parent,points,width,material){
- const path=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p)));const vertices=[],indices=[];const rows=28,cols=12;
- for(let i=0;i<=rows;i++){const t=i/rows,p=path.getPoint(t),w=width*Math.pow(Math.sin(Math.PI*(t*.92+.04)),.55)*(1-t*.32);
- for(let j=0;j<=cols;j++){const u=j/cols*2-1;vertices.push(p.x+u*w,p.y,p.z+Math.sqrt(Math.max(0,1-u*u))*width*.43);}}
- for(let i=0;i<rows;i++)for(let j=0;j<cols;j++){const a=i*(cols+1)+j,b=a+cols+1;indices.push(a,b,a+1,a+1,b,b+1);}
- const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));g.setIndex(indices);g.computeVertexNormals();return mesh(g,material,parent);
+
+function eye(cx, side) {
+  // side: -1 left, 1 right (mirrors the outer lash flick)
+  const o = side;
+  const shape = `M${cx - 19 * o} 157 C${cx - 14 * o} 139 ${cx + 12 * o} 136 ${cx + 20 * o} 150 C${cx + 21 * o} 168 ${cx + 8 * o} 178 ${cx - 2 * o} 178 C${cx - 13 * o} 178 ${cx - 21 * o} 170 ${cx - 19 * o} 157Z`;
+  return `
+  <g class="km-eye">
+    <clipPath id="km-clip-${side}"><path d="${shape}"/></clipPath>
+    <path d="${shape}" fill="#fffdfb"/>
+    <g clip-path="url(#km-clip-${side})">
+      <g class="km-iris">
+        <ellipse cx="${cx}" cy="161" rx="14.5" ry="18" fill="url(#km-iris)"/>
+        <ellipse cx="${cx}" cy="163" rx="7.5" ry="10" fill="#3b2030" opacity=".9"/>
+        <ellipse cx="${cx}" cy="171" rx="9" ry="4" fill="#ffc7c0" opacity=".55"/>
+        <circle cx="${cx - 5 * o}" cy="153" r="5.2" fill="#fff"/>
+        <circle cx="${cx + 5 * o}" cy="168" r="2.4" fill="#fff" opacity=".9"/>
+      </g>
+      <path d="M${cx - 22 * o} 150 C${cx - 10 * o} 143 ${cx + 10 * o} 143 ${cx + 22 * o} 151 L${cx + 22 * o} 140 L${cx - 22 * o} 140Z" fill="#c98d8f" opacity=".25"/>
+    </g>
+    <path d="M${cx - 21 * o} 156 C${cx - 15 * o} 137 ${cx + 13 * o} 134 ${cx + 22 * o} 149" fill="none" stroke="#3a2328" stroke-width="4.6" stroke-linecap="round"/>
+    <path d="M${cx + 19 * o} 146 L${cx + 27 * o} 141 M${cx + 21 * o} 150 L${cx + 28 * o} 149" stroke="#3a2328" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M${cx - 9 * o} 179 C${cx - 3 * o} 181 ${cx + 6 * o} 180 ${cx + 11 * o} 176" fill="none" stroke="#b67a77" stroke-width="1.6" stroke-linecap="round" opacity=".7"/>
+  </g>
+  <path class="km-eye-happy" d="M${cx - 16} 162 Q${cx} 146 ${cx + 16} 162" fill="none" stroke="#3a2328" stroke-width="4.2" stroke-linecap="round"/>`;
 }
-function animeFace(parent){
- const c=document.createElement('canvas');c.width=c.height=1024;const x=c.getContext('2d');
- // Painted eyes lie on the curved face, with almond outlines and layered amber irises.
- for(const side of [-1,1]){const cx=512+side*220,cy=475;
- x.save();x.translate(cx,cy);x.scale(side,1);
- x.fillStyle='#fffdf4';x.beginPath();x.moveTo(-114,0);x.bezierCurveTo(-65,-98,54,-112,116,-29);x.bezierCurveTo(109,123,-84,120,-114,0);x.fill();
- x.save();x.clip();const iris=x.createLinearGradient(0,-90,0,110);iris.addColorStop(0,'#493044');iris.addColorStop(.45,'#98634d');iris.addColorStop(1,'#e8b976');x.fillStyle=iris;x.beginPath();x.ellipse(0,12,66,101,0,0,Math.PI*2);x.fill();x.fillStyle='#3e2b39';x.beginPath();x.ellipse(0,-4,29,68,0,0,Math.PI*2);x.fill();
- x.fillStyle='#fff';x.beginPath();x.ellipse(-24,-40,22,27,-.2,0,Math.PI*2);x.fill();x.beginPath();x.arc(29,48,10,0,Math.PI*2);x.fill();x.fillStyle='#fbe4b5';x.beginPath();x.ellipse(-8,77,22,7,0,0,Math.PI*2);x.fill();x.restore();
- x.strokeStyle='#573d38';x.lineWidth=14;x.lineCap='round';x.beginPath();x.moveTo(-114,0);x.bezierCurveTo(-65,-98,54,-112,116,-29);x.lineTo(137,-53);x.stroke();x.lineWidth=5;x.strokeStyle='#986951';x.beginPath();x.moveTo(-98,61);x.quadraticCurveTo(0,111,96,61);x.stroke();
- x.lineWidth=8;x.strokeStyle='#805342';x.beginPath();x.moveTo(-80,-144);x.quadraticCurveTo(5,-171,92,-130);x.stroke();x.restore();
- const blush=x.createRadialGradient(cx+side*58,665,2,cx+side*58,665,89);blush.addColorStop(0,'#ef9d9760');blush.addColorStop(1,'#ef9d9700');x.fillStyle=blush;x.fillRect(cx+side*58-90,575,180,180);}
- x.strokeStyle='#dcaaa0';x.lineWidth=6;x.lineCap='round';x.beginPath();x.moveTo(516,607);x.quadraticCurveTo(504,622,520,622);x.stroke();
- x.fillStyle='#bc6c69';x.beginPath();x.moveTo(467,729);x.quadraticCurveTo(512,750,557,729);x.quadraticCurveTo(512,799,467,729);x.fill();x.fillStyle='#f0b0a5';x.beginPath();x.ellipse(512,760,22,9,0,0,Math.PI*2);x.fill();
- const texture=new THREE.CanvasTexture(c);texture.colorSpace=THREE.SRGBColorSpace;const material=new THREE.MeshBasicMaterial({map:texture,transparent:true,depthWrite:false,side:THREE.DoubleSide});
- const pos=[],uv=[],ids=[];const n=44;
- for(let i=0;i<=n;i++)for(let j=0;j<=n;j++){const u=j/n,v=i/n,px=(u-.5)*1.02,py=(.5-v)*.88-.05;const r=1-(px/.57)**2-((py+.055)/.52)**2;pos.push(px,py,.13+.453*Math.sqrt(Math.max(.025,r))+.008);uv.push(u,1-v);}
- for(let i=0;i<n;i++)for(let j=0;j<n;j++){const a=i*(n+1)+j,b=a+n+1;ids.push(a,b,a+1,a+1,b,b+1);}
- const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(ids);g.computeVertexNormals();const face=mesh(g,material,parent);face.castShadow=false;face.receiveShadow=false;
+
+function buildSVG() {
+  const kimonoFlowers = [sakura(12, 12, 7, '#fff7f5'), sakura(34, 33, 5, '#ffe1ea', '#f6c35b', 20)].join('');
+  return `
+<svg class="km-girl" viewBox="0 0 360 540" xmlns="${NS}" role="img" aria-hidden="true">
+  <defs>
+    <linearGradient id="km-hair" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6b4239"/><stop offset=".55" stop-color="#4c2d2c"/><stop offset="1" stop-color="#3a2226"/>
+    </linearGradient>
+    <linearGradient id="km-hair-light" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8a5a4c"/><stop offset="1" stop-color="#5a3633"/>
+    </linearGradient>
+    <linearGradient id="km-iris" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4d2638"/><stop offset=".5" stop-color="#9c4f5f"/><stop offset="1" stop-color="#f2a5a0"/>
+    </linearGradient>
+    <radialGradient id="km-skin" cx=".5" cy=".42" r=".62">
+      <stop offset="0" stop-color="#fff3ec"/><stop offset="1" stop-color="#ffe0d4"/>
+    </radialGradient>
+    <pattern id="km-kimono" width="44" height="44" patternUnits="userSpaceOnUse">
+      <rect width="44" height="44" fill="#f4a9bb"/>
+      <path d="M0 44 Q11 36 22 44 T44 44" fill="none" stroke="#f9c6d3" stroke-width="1.4" opacity=".7"/>
+      ${kimonoFlowers}
+    </pattern>
+    <pattern id="km-obi" width="16" height="16" patternUnits="userSpaceOnUse">
+      <rect width="16" height="16" fill="#f3d18c"/>
+      <path d="M0 8 L8 0 L16 8 L8 16Z" fill="none" stroke="#e2b765" stroke-width="1.2"/>
+    </pattern>
+    <linearGradient id="km-shade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#7a2f4c" stop-opacity=".28"/><stop offset=".25" stop-color="#7a2f4c" stop-opacity="0"/>
+      <stop offset=".75" stop-color="#7a2f4c" stop-opacity="0"/><stop offset="1" stop-color="#7a2f4c" stop-opacity=".3"/>
+    </linearGradient>
+    <linearGradient id="km-hem" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#b5577a" stop-opacity="0"/><stop offset="1" stop-color="#9b4067" stop-opacity=".75"/>
+    </linearGradient>
+    <filter id="km-soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4"/></filter>
+  </defs>
+
+  <ellipse cx="180" cy="516" rx="92" ry="11" fill="#b4728a" opacity=".18"/>
+
+  <!-- back hair -->
+  <g class="km-headpart"><g class="km-hairback">
+    <path d="M96 150 C86 70 138 36 180 36 C224 36 276 70 264 150 C272 230 290 318 276 398 C262 388 250 376 242 352 C236 372 226 384 212 392 L148 392 C134 384 124 372 118 352 C110 376 98 388 84 398 C70 318 88 230 96 150Z" fill="url(#km-hair)"/>
+    <path d="M118 352 C112 300 110 250 116 200 M242 352 C248 300 250 250 244 200" stroke="#2f1b1f" stroke-width="2" opacity=".35" fill="none"/>
+  </g></g>
+
+  <!-- body -->
+  <g class="km-body">
+    <!-- long furisode sleeves -->
+    <path d="M124 262 C98 276 84 322 82 384 C80 428 94 458 122 466 L146 458 L142 300Z" fill="url(#km-kimono)"/>
+    <path d="M236 262 C262 276 276 322 278 384 C280 428 266 458 238 466 L214 458 L218 300Z" fill="url(#km-kimono)"/>
+    <path d="M82 384 C80 428 94 458 122 466 L146 458 L144 420 C120 430 98 418 82 384Z" fill="url(#km-hem)"/>
+    <path d="M278 384 C280 428 266 458 238 466 L214 458 L216 420 C240 430 262 418 278 384Z" fill="url(#km-hem)"/>
+    <!-- robe -->
+    <path d="M122 262 C138 246 160 240 180 240 C200 240 222 246 238 262 L254 506 L106 506Z" fill="url(#km-kimono)"/>
+    <path d="M122 262 C138 246 160 240 180 240 C200 240 222 246 238 262 L254 506 L106 506Z" fill="url(#km-shade)"/>
+    <path d="M110 440 L250 440 L254 506 L106 506Z" fill="url(#km-hem)"/>
+    <path d="M206 250 L150 506" stroke="#d9748f" stroke-width="2.2" opacity=".55"/>
+    <!-- collar: white under-kimono + crimson edge -->
+    <path d="M158 243 L180 296 L202 243" fill="none" stroke="#fffaf6" stroke-width="11" stroke-linejoin="round"/>
+    <path d="M150 248 L180 304 L210 248" fill="none" stroke="#c94f6d" stroke-width="7" stroke-linejoin="round"/>
+    <!-- obi -->
+    <path d="M118 312 Q180 304 242 312 L244 322 Q180 314 116 322Z" fill="#f19bb3"/>
+    <path d="M116 320 Q180 312 244 320 L246 364 Q180 356 114 364Z" fill="url(#km-obi)"/>
+    <path d="M116 320 Q180 312 244 320 L246 364 Q180 356 114 364Z" fill="url(#km-shade)"/>
+    <path d="M115 342 Q180 334 245 342" stroke="#c94f6d" stroke-width="3.2" fill="none"/>
+    <circle cx="180" cy="338" r="5.5" fill="#c94f6d"/>
+    ${sakura(206, 336, 9, '#fff6f8', '#e7a93f', 10)}
+    <!-- hands, politely together -->
+    <path d="M150 382 C160 372 170 376 180 384 C190 376 200 372 210 382 L206 392 C196 386 188 390 180 396 C172 390 164 386 154 392Z" fill="#fff0f3" opacity=".9"/>
+    <ellipse cx="172" cy="392" rx="12" ry="8.5" fill="url(#km-skin)"/>
+    <ellipse cx="188" cy="394" rx="12" ry="8.5" fill="url(#km-skin)"/>
+    <path d="M182 390 Q186 396 194 396" stroke="#e7b3a6" stroke-width="1.3" fill="none"/>
+    <!-- feet -->
+    <ellipse cx="164" cy="510" rx="13" ry="6" fill="#fffaf7"/><ellipse cx="196" cy="510" rx="13" ry="6" fill="#fffaf7"/>
+    <path d="M156 512 Q164 504 172 512 M188 512 Q196 504 204 512" stroke="#c94f6d" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- neck -->
+  <path d="M168 214 L192 214 L194 250 Q180 256 166 250Z" fill="#ffe1d6"/>
+  <path d="M168 226 Q180 236 192 226 L192 216 L168 216Z" fill="#f4c6b8" opacity=".6"/>
+
+  <!-- head -->
+  <g class="km-headpart"><g class="km-head">
+    <path d="M110 142 C110 92 140 70 180 70 C220 70 250 92 250 142 C250 188 222 224 180 228 C138 224 110 188 110 142Z" fill="url(#km-skin)"/>
+    <ellipse cx="138" cy="186" rx="16" ry="8.5" fill="#ff98ac" opacity=".55" filter="url(#km-soft)"/>
+    <ellipse cx="222" cy="186" rx="16" ry="8.5" fill="#ff98ac" opacity=".55" filter="url(#km-soft)"/>
+    <path d="M132 186 l5 -5 M139 188 l5 -5 M216 188 l5 -5 M223 186 l5 -5" stroke="#f58aa0" stroke-width="1.4" stroke-linecap="round" opacity=".6"/>
+    <path d="M138 128 Q152 121 166 127 M194 127 Q208 121 222 128" stroke="#7a4b45" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".75"/>
+    <g class="km-eyes">${eye(151, -1)}${eye(209, 1)}</g>
+    <path d="M179 181 Q181 184 183 182" stroke="#e0a092" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <path class="km-mouth" d="M171 197 Q180 204 189 197" stroke="#c4626f" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+    <path class="km-mouth-happy" d="M169 194 Q180 212 191 194 Q180 199 169 194Z" fill="#d95b74"/>
+
+    <!-- front hair: bangs and side locks -->
+    <path d="M100 152 C94 82 138 54 182 54 C228 54 268 84 262 152 C254 130 247 117 236 108 C238 128 232 142 225 148 C220 127 211 113 199 104 C201 124 195 137 187 143 C183 122 175 108 165 101 C165 120 157 134 147 141 C145 122 137 111 125 107 C123 128 112 141 100 152Z" fill="url(#km-hair-light)"/>
+    <path d="M100 152 C94 82 138 54 182 54 C228 54 268 84 262 152 C254 130 247 117 236 108 C238 128 232 142 225 148 C220 127 211 113 199 104 C201 124 195 137 187 143 C183 122 175 108 165 101 C165 120 157 134 147 141 C145 122 137 111 125 107 C123 128 112 141 100 152Z" fill="url(#km-hair)" opacity=".55"/>
+    <g class="km-lock-l"><path d="M104 140 C94 196 98 250 114 292 C121 270 122 240 119 204 C118 178 114 156 109 141Z" fill="url(#km-hair)"/></g>
+    <g class="km-lock-r"><path d="M256 140 C266 196 262 250 246 292 C239 270 238 240 241 204 C242 178 246 156 251 141Z" fill="url(#km-hair)"/></g>
+    <path d="M126 84 C146 70 214 70 236 86" stroke="#fff" stroke-width="5" stroke-linecap="round" fill="none" opacity=".22" stroke-dasharray="26 10"/>
+
+    <!-- kanzashi: sakura cluster with swaying beads -->
+    <g class="km-kanzashi">
+      <path d="M236 98 C244 100 250 108 252 116" stroke="#8fae8b" stroke-width="3" fill="none" stroke-linecap="round"/>
+      ${sakura(246, 92, 13, '#ffd3df', '#f2b544', 8)}
+      ${sakura(228, 80, 10, '#fff4f7', '#f2b544', 30)}
+      ${sakura(262, 104, 8, '#f6a3ba', '#f2b544', 50)}
+      <g class="km-beads">
+        <path d="M250 112 L256 158 M258 110 L268 150 M244 112 L246 146" stroke="#e9b85a" stroke-width="1.3"/>
+        <circle cx="256" cy="160" r="4" fill="#e7516f"/><circle cx="268" cy="152" r="3.4" fill="#fff4f7"/><circle cx="246" cy="148" r="3.4" fill="#f6a3ba"/>
+        ${sakura(256, 168, 4.5, '#ffd3df')}
+      </g>
+    </g>
+  </g></g>
+
+  <!-- little hearts for the bow -->
+  <g class="km-hearts">
+    <path d="M286 120 c-6 -8 -18 -2 -12 8 l12 10 l12 -10 c6 -10 -6 -16 -12 -8z" fill="#f27d9b"/>
+    <path d="M70 160 c-4 -6 -13 -1 -9 6 l9 7 l9 -7 c4 -7 -5 -12 -9 -6z" fill="#f7a8bd"/>
+    <path d="M300 200 c-3 -4 -9 -1 -6 4 l6 5 l6 -5 c3 -5 -3 -8 -6 -4z" fill="#f9c3d1"/>
+  </g>
+</svg>`;
 }
-function sleeve(parent,side,fabric){
- const sh=new THREE.Shape();sh.moveTo(.26,.54);sh.quadraticCurveTo(.53,.59,.78,.25);sh.lineTo(.86,-.48);sh.quadraticCurveTo(.69,-.62,.43,-.48);sh.lineTo(.32,.03);sh.closePath();
- const geo=new THREE.ExtrudeGeometry(sh,{depth:.28,bevelEnabled:true,bevelThickness:.045,bevelSize:.055,bevelSegments:4,steps:1,curveSegments:18});
- const m=mesh(geo,fabric,parent,0,0,-.06);m.scale.x=side;return m;
-}
-try{
-renderer=new THREE.WebGLRenderer({alpha:true,antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;home.replaceChildren(renderer.domElement);
-scene=new THREE.Scene();camera=new THREE.PerspectiveCamera(32,1,.1,100);camera.position.set(0,2.6,8.3);camera.lookAt(0,1.68,0);scene.add(new THREE.HemisphereLight('#fff5e6','#b6a9ab',2.2));const key=new THREE.DirectionalLight('#fff6e6',2.6);key.position.set(-3,6,5);key.castShadow=true;key.shadow.mapSize.set(1024,1024);key.shadow.camera.left=-4;key.shadow.camera.right=4;key.shadow.camera.top=5;key.shadow.camera.bottom=-4;key.shadow.bias=-.001;key.shadow.normalBias=.025;scene.add(key);const rim=new THREE.DirectionalLight('#ffd9e2',2);rim.position.set(4,3,-3);scene.add(rim);
-const cream=mat('#f6eedc'),skin=mat('#ffe9d8'),hair=mat('#663c30',.8),pink=mat('#d994a6'),dark=mat('#40313d'),gold=mat('#c7a464',.4),obi=mat('#86a99c');const fabric=new THREE.MeshStandardMaterial({map:kimonoTexture(),roughness:.88});
-// Small sandals, a fitted kimono skirt and a waist pivot shared by the upper body.
-rig=new THREE.Group();rig.rotation.y=-.10;scene.add(rig);
-for(const side of [-1,1]){ball(rig,mat('#b88f70'),side*.19,.19,.15,.16,.07,.27);ball(rig,cream,side*.19,.26,.13,.13,.075,.23);line(rig,[[side*.19-.10,.29,.25],[side*.19,.31,.12],[side*.19+.10,.29,.25]],mat('#c96d5b'),.022);}
-const skirt=mesh(new THREE.CylinderGeometry(.33,.46,1.02,64),fabric,rig,0,.83,0);skirt.scale.z=.80;
-line(rig,[[.20,1.28,.27],[.13,.80,.35],[.10,.33,.38]],cream,.014);
-upper=new THREE.Group();upper.position.set(0,1.29,0);rig.add(upper);
-const torso=mesh(new THREE.CylinderGeometry(.29,.34,.67,64),fabric,upper,0,.27,0);torso.scale.z=.80;ball(upper,skin,0,.67,0,.12,.18,.115);
-line(upper,[[-.20,.58,.18],[-.06,.35,.285],[.13,.13,.31]],cream,.040);line(upper,[[.20,.58,.18],[.04,.36,.29],[-.13,.12,.32]],cream,.040);
-const belt=mesh(new THREE.CylinderGeometry(.355,.355,.24,64),obi,upper,0,-.015,0);belt.scale.z=.87;
-line(upper,[[-.28,.005,.19],[0,.005,.315],[.28,.005,.19]],cream,.016);flower(upper,.07,.005,.338,.045,mat('#f5d893'));
-for(const side of [-1,1]){const bow=ball(upper,obi,side*.20,.02,-.30,.23,.16,.09);bow.rotation.z=side*.25;sleeve(upper,side,fabric);}
-for(const side of [-1,1]){const hand=ball(upper,skin,side*.085,.075,.35,.105,.045,.055);hand.rotation.z=side*.20;}
-head=new THREE.Group();head.position.set(0,1.08,.005);head.scale.setScalar(1.24);upper.add(head);
-ball(head,hair,0,.10,-.14,.61,.59,.48);ball(head,skin,0,-.055,.13,.57,.52,.453);
-const hairLight=mat('#80503b',.8);hair.side=THREE.DoubleSide;hairLight.side=THREE.DoubleSide;
-// Long back hair, softly split bangs and two curved face-framing strands.
-for(let i=0;i<7;i++){const a=(i-3)*.15;lock(head,[[a,.45,-.35],[a*1.4,.05,-.46],[a*1.5,-.56,-.34],[a*1.35,-.91,-.20]],.19,i%3===0?hairLight:hair);}
-lock(head,[[-.08,.59,.03],[-.24,.43,.36],[-.32,.22,.48],[-.40,.05,.43]],.24,hair);
-lock(head,[[.08,.59,.01],[.16,.43,.38],[.20,.24,.51],[.29,.15,.48]],.23,hairLight);
-lock(head,[[-.04,.59,.09],[-.07,.43,.44],[-.09,.26,.52],[-.14,.19,.51]],.11,hairLight);
-for(const side of [-1,1]){lock(head,[[side*.46,.38,.20],[side*.55,.0,.29],[side*.51,-.43,.26],[side*.39,-.70,.20]],.105,hair);}
-animeFace(head);
-// Asymmetric camellia hairpin with a sage cord: an original ornament.
-const pin=new THREE.Group();pin.position.set(-.55,.18,.17);pin.rotation.z=.3;head.add(pin);flower(pin,0,0,0,.12,mat('#ed947e'));flower(pin,.10,-.09,.01,.065,cream);
-line(pin,[[0,-.06,0],[-.08,-.19,0],[0,-.26,.01],[.06,-.17,0],[0,-.06,0]],obi,.018);
-// A restrained arrangement of 3D petals gives depth to the quiet background.
-for(let i=0;i<5;i++){const p=ball(scene,i%2?pink:cream,Math.sin(i*2.4)*1.9, .6+(i*.39)%2.8,Math.cos(i)*.6-.7,.045,.077,.018);p.rotation.set(i*.4,0,i);p.userData={x:p.position.x,y:p.position.y,phase:i};petals.push(p);}const ro=new ResizeObserver(resize);ro.observe(home);ro.observe(modalHost);resize();let pointer=0;home.addEventListener('pointermove',e=>{pointer=((e.clientX-home.getBoundingClientRect().left)/home.clientWidth-.5)*.30});home.addEventListener('pointerleave',()=>pointer=0);
-renderer.setAnimationLoop(ms=>{if(document.hidden)return;const t=ms/1000,elapsed=t-bowStart;let bend=0;if(!reduced&&elapsed>=0&&elapsed<4.8){if(elapsed<1.5)bend=(1-Math.cos(elapsed/1.5*Math.PI))/2;else if(elapsed<2.8)bend=1;else bend=(1+Math.cos((elapsed-2.8)/2*Math.PI))/2;}upper.rotation.x=bend*.64;head.rotation.x=bend*.12;rig.rotation.y+=( (dialog.open?0:-.11+pointer)-rig.rotation.y)*.035;rig.position.y=reduced?0:Math.sin(t*1.5)*.009;petals.forEach(p=>{if(reduced)return;const a=p.userData;p.position.y=a.y+Math.sin(t*.5+a.phase)*.1;p.position.x=a.x+Math.sin(t*.3+a.phase)*.08;p.rotation.y=t*.2+a.phase;});renderer.render(scene,camera);});
-}catch(error){renderer?.dispose();throw error;}
-return {show(){canvasParent=modalHost;modalHost.append(renderer.domElement);resize();bowStart=performance.now()/1000;},hide(){canvasParent=home;home.append(renderer.domElement);resize();},replay(){bowStart=performance.now()/1000;}};
+
+export function mountCharacter(home, modalHost, dialog) {
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const wrap = document.createElement('div');
+  wrap.className = 'km-wrap';
+  wrap.innerHTML = buildSVG();
+  const svg = wrap.firstElementChild;
+  home.replaceChildren(wrap);
+
+  const heads = svg.querySelectorAll('.km-headpart');
+  const irises = svg.querySelectorAll('.km-iris');
+  const body = svg.querySelector('.km-body');
+
+  // eyes and head gently follow the pointer
+  let tx = 0, ty = 0, cx = 0, cy = 0, raf = 0, bowing = false;
+  function follow() {
+    cx += (tx - cx) * 0.12; cy += (ty - cy) * 0.12;
+    irises.forEach(i => i.setAttribute('transform', `translate(${(cx * 3.2).toFixed(2)} ${(cy * 2.6).toFixed(2)})`));
+    if (!bowing) heads.forEach(h => h.setAttribute('transform', `translate(${(cx * 3).toFixed(2)} ${(cy * 1.5).toFixed(2)}) rotate(${(cx * 2.4).toFixed(2)})`));
+    raf = Math.abs(tx - cx) + Math.abs(ty - cy) > 0.002 ? requestAnimationFrame(follow) : 0;
+  }
+  if (!reduced) {
+    addEventListener('pointermove', e => {
+      const r = svg.getBoundingClientRect();
+      if (!r.width) return;
+      const fx = r.left + r.width / 2, fy = r.top + r.height * 0.3;
+      tx = Math.max(-1, Math.min(1, (e.clientX - fx) / (innerWidth * 0.45)));
+      ty = Math.max(-1, Math.min(1, (e.clientY - fy) / (innerHeight * 0.45)));
+      if (!raf) raf = requestAnimationFrame(follow);
+    }, { passive: true });
+  }
+
+  // the bow: head dips, body leans, she smiles with closed eyes, hearts float up
+  let animations = [];
+  function bow() {
+    svg.classList.add('happy');
+    if (reduced) return;
+    animations.forEach(a => a.cancel());
+    bowing = true;
+    const opts = { duration: 2600, easing: 'cubic-bezier(.45,0,.25,1)' };
+    const headFrames = [
+      { transform: 'translate(0px,0px) rotate(0deg)' },
+      { transform: 'translate(0px,38px) rotate(0deg) scale(1,.94)', offset: 0.35 },
+      { transform: 'translate(0px,38px) rotate(0deg) scale(1,.94)', offset: 0.62 },
+      { transform: 'translate(0px,0px) rotate(0deg)' },
+    ];
+    animations = [
+      ...[...heads].map(h => h.animate(headFrames, opts)),
+      body.animate([{ transform: 'scale(1,1)' }, { transform: 'scale(1,.965)', offset: 0.35 }, { transform: 'scale(1,.965)', offset: 0.62 }, { transform: 'scale(1,1)' }], opts),
+      svg.querySelector('.km-hearts').animate([
+        { opacity: 0, transform: 'translateY(20px) scale(.6)' }, { opacity: 1, transform: 'translateY(0) scale(1)', offset: 0.3 },
+        { opacity: 1, transform: 'translateY(-26px) scale(1.05)', offset: 0.75 }, { opacity: 0, transform: 'translateY(-50px) scale(1)' }],
+      { duration: 2800, easing: 'ease-out' }),
+    ];
+    animations[0].finished.then(() => { bowing = false; if (!raf) raf = requestAnimationFrame(follow); }).catch(() => {});
+  }
+
+  function moveTo(host) { host.append(wrap); }
+  return {
+    show() { moveTo(modalHost); setTimeout(bow, 250); },
+    hide() { svg.classList.remove('happy'); moveTo(home); },
+    replay() { bow(); },
+  };
 }

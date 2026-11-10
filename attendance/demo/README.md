@@ -6,4 +6,4 @@
 
 Three.js 0.180.0 已放入 vendor，保留 MIT 许可证，无运行时外网依赖。尊重系统减少动态效果设置；不支持 WebGL 时降级显示文字，打卡演示仍可操作。
 
-本目录保留为早期独立原型。正式系统现已接入共用考勤接口、11 款样式和成功动画，请从 `attendance/start.sh`（Windows 为 `start.bat`）启动，并在 `http://127.0.0.1:5000/admin/appearance` 选择样式。正式使用说明见项目根目录的 USER_GUIDE.md。
+本目录保留为早期独立原型。正式系统现已接入共用考勤接口、12 款样式和成功动画，请从 `attendance/start.sh`（Windows 为 `start.bat`）启动，并在 `http://127.0.0.1:5000/admin/appearance` 选择样式。正式使用说明见项目根目录的 USER_GUIDE.md。

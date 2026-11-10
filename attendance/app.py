@@ -1,4 +1,5 @@
 import json
+from html import escape as html_escape
 import secrets
 import hashlib
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -107,7 +108,7 @@ def _check_worker():
                 with app.app_context():
                     from models import ClockTicket
                     ticket = db.session.get(ClockTicket, job_id) if job.get('ticket') else None
-                    result = ({'ok': False, 'msg': '日期已变化，请重新确认当天状态'}
+                    result = ({'ok': False, 'msg': tmsg('msg.day_changed', job.get('lang', 'zh'))}
                               if ticket and ticket.day != today().isoformat()
                               else _process_check(job['data'], job.get('lang', 'zh')))
                     if job.get('ticket'):
@@ -125,7 +126,7 @@ def _check_worker():
                     db.session.rollback()
                     ticket = db.session.get(ClockTicket, job_id)
                     if ticket:
-                        ticket.result = json.dumps({'ok': False, 'msg': '处理失败，请重新确认当天状态'})
+                        ticket.result = json.dumps({'ok': False, 'msg': tmsg('msg.process_failed', job.get('lang', 'zh'))})
                         db.session.commit()
             else:
                 with _check_results_lock:
@@ -169,7 +170,7 @@ def _process_check(data, lang):
             record.check_in = now
         elif action == 'check_out':
             if not record.check_in:
-                return {'ok': False, 'msg': '先签到才能签退', '_code': 400}
+                return {'ok': False, 'msg': t['msg.check_in_first'], '_code': 400}
             if record.check_out:
                 return {'ok': False, 'msg': t['home.already_checked_out'], '_code': 400}
             record.check_out = now
@@ -199,6 +200,24 @@ def _process_check(data, lang):
     except Exception as e:
         db.session.rollback()
         return {'ok': False, 'msg': str(e)}
+
+
+def tmsg(key, lang=None, **kw):
+    """Translated message for API responses; falls back to the key itself."""
+    text = load_translations(lang or get_lang()).get(key, key)
+    return text.format(**kw) if kw else text
+
+
+# Schedule notes are stored as stable codes; older rows may still contain Chinese text.
+SCHEDULE_NOTE_CODES = {'偏好休息但排班': 'pref_off_assigned', '都可': 'flexible', '未提交偏好': 'no_pref',
+                       '偏好上班但调整': 'pref_work_adjusted', '偏好休息': 'pref_off', '手动调整': 'manual'}
+
+
+def schedule_note_label(note, lang=None):
+    code = SCHEDULE_NOTE_CODES.get(note, note)
+    key = 'note.' + code if code else ''
+    translations = load_translations(lang or get_lang())
+    return translations.get(key, note) if key else ''
 
 
 @lru_cache(maxsize=3)
@@ -305,10 +324,13 @@ def render_clock(theme, employees, config, preview):
 
 @app.route('/api/clock/theme')
 def api_clock_theme():
-    assets = {key: ['/static/themes/collection.css?v=1', '/static/themes/feedback.css?v=1'] for key in THEMES}
-    assets['original'] = ['/static/style.css', '/static/themes/feedback.css?v=1']
-    assets['classic'] = ['/static/style.css', '/static/themes/cyber.js?v=1', '/static/themes/vendor/three.module.js', '/static/themes/vendor/three.core.js', '/static/themes/feedback.css?v=1']
-    assets['kimono'] = ['/static/themes/kimono.css?v=1', '/static/themes/character.js?v=1', '/static/themes/vendor/three.module.js', '/static/themes/vendor/three.core.js']
+    shared = ['/static/themes/clock.js?v=4', '/static/themes/feedback.css?v=2', '/static/themes/feedback-fx.js?v=1']
+    three = ['/static/themes/vendor/three.module.js', '/static/themes/vendor/three.core.js']
+    assets = {key: ['/static/themes/collection.css?v=1', *shared] for key in THEMES}
+    assets['original'] = ['/static/style.css', *shared]
+    assets['classic'] = ['/static/style.css', '/static/themes/cyber.js?v=1', *three, *shared]
+    assets['kimono'] = ['/static/themes/kimono.css?v=2', '/static/themes/character.js?v=2', '/static/themes/clock.js?v=4', '/static/themes/feedback-fx.js?v=1']
+    assets['planet'] = ['/static/themes/planet.css?v=1', '/static/themes/planet.js?v=1', *three, *shared]
     response = jsonify(**clock_theme_config(), day=today().isoformat(), assets=assets)
     response.headers['Cache-Control'] = 'no-store'
     return response
@@ -360,14 +382,14 @@ def create_clock_ticket():
     try:
         uuid.UUID(tid)
     except (ValueError, TypeError, AttributeError):
-        return jsonify(ok=False, msg='请求标识无效'), 400
+        return jsonify(ok=False, msg=tmsg('msg.bad_request_id')), 400
     if data.get('action') not in ('check_in', 'check_out'):
-        return jsonify(ok=False, msg='打卡操作无效'), 400
+        return jsonify(ok=False, msg=tmsg('msg.bad_action')), 400
     with _write_lock:
         ticket = db.session.get(ClockTicket, tid)
         if ticket:
             if ticket.employee_id != data.get('employee_id') or ticket.action != data['action']:
-                return jsonify(ok=False, msg='请求标识冲突'), 409
+                return jsonify(ok=False, msg=tmsg('msg.request_conflict')), 409
         else:
             emp = Employee.query.filter_by(employee_id=data.get('employee_id'), is_active=True).first()
             if not emp:
@@ -399,9 +421,9 @@ def get_clock_ticket(tid):
     record = AttendanceRecord.query.filter_by(employee_id=emp.id, date=date.fromisoformat(ticket.day)).first() if emp else None
     recorded = getattr(record, ticket.action, None) if record else None
     if recorded and recorded >= ticket.created_at:
-        return jsonify(pending=False, result={'ok': True, 'msg': '打卡已记录', 'time': recorded.strftime('%H:%M:%S')})
+        return jsonify(pending=False, result={'ok': True, 'msg': tmsg('msg.recorded'), 'time': recorded.strftime('%H:%M:%S')})
     if ticket.process_id != CLOCK_PROCESS_ID:
-        return jsonify(pending=False, result={'ok': False, 'msg': '服务已重启，未查到本次记录，请重新确认打卡状态'})
+        return jsonify(pending=False, result={'ok': False, 'msg': tmsg('msg.restarted')})
     return jsonify(pending=True)
 
 
@@ -446,7 +468,7 @@ def api_check():
                 return jsonify(result), status_code
         time_module.sleep(0.05)
 
-    return jsonify({'ok': False, 'msg': '打卡排队超时，请重试'}), 503
+    return jsonify({'ok': False, 'msg': tmsg('msg.queue_timeout')}), 503
 
 
 @app.route('/api/check/queue')
@@ -567,11 +589,12 @@ def qrcode_print():
     img.save(buf)
     svg = buf.getvalue().decode('utf-8')
 
+    title, hint, print_label = tmsg('qr.title'), tmsg('qr.hint'), tmsg('qr.print')
     return f'''<!DOCTYPE html>
-<html>
+<html lang="{get_lang()}">
 <head>
 <meta charset="utf-8">
-<title>打卡二维码</title>
+<title>{html_escape(title)}</title>
 <style>
 * {{ margin:0;padding:0;box-sizing:border-box; }}
 body {{ font-family:sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#fff; }}
@@ -586,12 +609,12 @@ h1 {{ font-size:24px;margin-bottom:8px;color:#1a202c; }}
 </head>
 <body>
 <div class="qr-page">
-<h1>📱 打卡二维码</h1>
+<h1>📱 {html_escape(title)}</h1>
 <div class="url">{url}</div>
 <div class="qr-wrap">{svg}</div>
-<div class="hint">手机扫码 → 输入三位个人码 → 本人打卡</div>
+<div class="hint">{html_escape(hint)}</div>
 <div class="no-print" style="margin-top:32px;">
-<button onclick="window.print()" style="padding:12px 32px;font-size:16px;border:none;border-radius:10px;background:#3b82f6;color:white;cursor:pointer;font-weight:600;">🖨️ 打印 / 另存为 PDF</button>
+<button onclick="window.print()" style="padding:12px 32px;font-size:16px;border:none;border-radius:10px;background:#3b82f6;color:white;cursor:pointer;font-weight:600;">🖨️ {html_escape(print_label)}</button>
 </div>
 </div>
 <script>setTimeout(()=>window.print(),300)</script>
@@ -751,7 +774,7 @@ def api_attendance_records():
 
     emp = Employee.query.filter_by(employee_id=employee_id).first()
     if not emp:
-        return jsonify({'ok': False, 'msg': '员工不存在'}), 404
+        return jsonify({'ok': False, 'msg': tmsg('error.employee_not_found')}), 404
 
     records = AttendanceRecord.query.filter(
         AttendanceRecord.employee_id == emp.id,
@@ -781,7 +804,7 @@ def api_attendance_update():
 
     emp = Employee.query.filter_by(employee_id=employee_id).first()
     if not emp:
-        return jsonify({'ok': False, 'msg': '员工不存在'}), 404
+        return jsonify({'ok': False, 'msg': tmsg('error.employee_not_found')}), 404
 
     # Parse times
     check_in = None
@@ -830,7 +853,7 @@ def api_attendance_update():
             record.status = None
 
     db.session.commit()
-    return jsonify({'ok': True, 'msg': '已保存'})
+    return jsonify({'ok': True, 'msg': tmsg('msg.saved')})
 
 
 @app.route('/admin/stats')
@@ -1006,15 +1029,9 @@ def api_stats_export():
     start = dtparser.parse(start_str).date() if start_str else today() - timedelta(days=30)
     end = dtparser.parse(end_str).date() if end_str else today()
 
-    STATUS_LABELS = {
-        'normal': '正常',
-        'late': '迟到',
-        'early_leave': '早退',
-        'both': '迟到+早退',
-        'absent': '缺勤',
-        'partial': '未签退',
-        'leave': '请假',
-    }
+    t = load_translations(get_lang())
+    STATUS_LABELS = {key: t['status.' + key] for key in ('normal', 'late', 'early_leave', 'both', 'absent', 'partial')}
+    STATUS_LABELS['leave'] = t['stats.leave']
 
     employee_id = data.get('employee_id')
     if employee_id:
@@ -1034,7 +1051,8 @@ def api_stats_export():
 
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(['日期', '工号', '姓名', '部门', '类型', '签到', '签退', '状态', '工时/天数'])
+    writer.writerow([t['csv.date'], t['admin.employee_id'], t['admin.name'], t['admin.department'], t['csv.type'],
+                     t['stats.check_in'], t['stats.check_out'], t['stats.status'], t['csv.hours']])
 
     rows = []
     for emp in emps:
@@ -1044,10 +1062,10 @@ def api_stats_export():
     for row in rows:
         emp_obj = Employee.query.filter_by(employee_id=row['employee_id']).first()
         is_regular = emp_obj.employment_type == 'regular' if emp_obj else False
-        emp_type = '全职' if is_regular else '兼职'
+        emp_type = t['admin.fulltime'] if is_regular else t['admin.parttime']
         status = STATUS_LABELS.get(row['status'], row['status'])
         if is_regular:
-            hours_display = '✓出勤' if row['check_in'] else ('请假' if row['status'] == 'leave' else '缺勤')
+            hours_display = t['csv.present'] if row['check_in'] else (t['stats.leave'] if row['status'] == 'leave' else t['status.absent'])
         else:
             if row['working_hours'] is not None:
                 hours_display = str(int(row['working_hours'])) + 'h'
@@ -1496,7 +1514,7 @@ def api_auto_schedule():
             stats['total_shortage'] += shortage
             conflicts.append({
                 'date': current.isoformat(),
-                'weekday': ['一','二','三','四','五','六','日'][current.weekday()],
+                'weekday': tmsg('admin.day_%d' % current.weekday()),
                 'assigned': len(assigned),
                 'needed': min_staff,
                 'shortage': shortage,
@@ -1514,16 +1532,16 @@ def api_auto_schedule():
             pref = pref_map.get(emp.id, {}).get(current)
             if emp.id in assigned:
                 if pref == 'want_off':
-                    note = '偏好休息但排班'
+                    note = 'pref_off_assigned'
                 elif pref == 'flexible':
-                    note = '都可'
+                    note = 'flexible'
                 elif not pref:
-                    note = '未提交偏好'
+                    note = 'no_pref'
             else:
                 if pref == 'want_work':
-                    note = '偏好上班但调整'
+                    note = 'pref_work_adjusted'
                 elif pref == 'want_off':
-                    note = '偏好休息'
+                    note = 'pref_off'
 
             db.session.add(ScheduleAssignment(
                 employee_id=emp.id, date=current,
@@ -1538,7 +1556,7 @@ def api_auto_schedule():
 
     return jsonify({
         'ok': True,
-        'month': f'{first_day.year}年{first_day.month}月',
+        'month': tmsg('msg.month_label', year=first_day.year, month=first_day.month),
         'stats': stats,
         'conflicts': conflicts[:10],
         'perfect': len(conflicts) == 0,
@@ -1579,7 +1597,7 @@ def api_schedule_result():
                     'date': d.isoformat(),
                     'weekday': d.weekday(),
                     'working': a.is_working,
-                    'note': a.note or '',
+                    'note': schedule_note_label(a.note or ''),
                 })
             else:
                 emp_days.append({
@@ -1622,13 +1640,13 @@ def api_schedule_update():
             if a:
                 a.is_working = ch['is_working']
                 a.source = 'manual'
-                a.note = ch.get('note', '手动调整')
+                a.note = ch.get('note', 'manual')
             else:
                 db.session.add(ScheduleAssignment(
                     employee_id=emp.id, date=dt_date,
                     is_working=ch['is_working'],
                     source='manual',
-                    note=ch.get('note', '手动调整'),
+                    note=ch.get('note', 'manual'),
                 ))
         db.session.commit()
         return jsonify({'ok': True})
@@ -1649,13 +1667,13 @@ def send_late_email(emp_name, emp_id, department, scheduled_start,
         return  # SMTP not configured
 
     now_str = datetime.now().strftime('%H:%M')
-    subject = f'[考勤] {emp_name} 迟到通知'
-    body = f'''{emp_name}（工号: {emp_id}，部门: {department}）今日迟到。
-
-应到时间: {scheduled_start}
-当前时间: {now_str}
-
-此邮件由考勤系统自动发送。'''
+    # Background job without a browser language: include Chinese, Japanese and English.
+    parts = []
+    for lang in ('zh', 'ja', 'en'):
+        parts.append(tmsg('email.late_body', lang, name=emp_name, emp_id=emp_id, department=department or '-',
+                          start=scheduled_start, now=now_str))
+    subject = ' / '.join(tmsg('email.late_subject', lang, name=emp_name) for lang in ('zh', 'ja', 'en'))
+    body = '\n\n────────\n\n'.join(parts)
 
     msg = MIMEText(body, 'plain', 'utf-8')
     msg['Subject'] = subject
@@ -1775,7 +1793,8 @@ def existing_instance_is_running():
 
 if __name__ == '__main__':
     if existing_instance_is_running():
-        logger.info('系统已经运行，直接打开浏览器')
+        for lang in ('zh', 'ja', 'en'):
+            logger.info(tmsg('console.already_running', lang))
         open_browser()
         raise SystemExit(0)
 
@@ -1783,8 +1802,10 @@ if __name__ == '__main__':
 
     open_browser()
     start_late_checker()
-    logger.info('%s %s 已启动', APP_NAME, APP_VERSION)
-    logger.info('本机访问: http://127.0.0.1:5000')
-    logger.info('手机访问: http://<本机IP>:5000')
-    logger.info('关闭本程序窗口即可停止服务')
+    # The console window is what non-technical users see: show it in all three languages.
+    for lang in ('zh', 'ja', 'en'):
+        logger.info(tmsg('console.started', lang, app=APP_NAME, version=APP_VERSION))
+        logger.info(tmsg('console.local', lang, url='http://127.0.0.1:5000'))
+        logger.info(tmsg('console.phone', lang, url=f'http://{get_lan_ip()}:5000'))
+        logger.info(tmsg('console.stop', lang))
     serve(app, host='0.0.0.0', port=5000, threads=8)
