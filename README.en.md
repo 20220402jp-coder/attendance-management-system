@@ -25,7 +25,15 @@ While the app is running, open these on its host computer:
 | Page styles (current source) | http://127.0.0.1:5000/admin/appearance |
 Normal startup uses `5000`. Open the Admin address directly if there is no Admin link. If a desktop shortcut has been created locally, you can use it; the repository does not automatically install desktop shortcuts.
 
-Style settings can currently be managed only on the host computer. A complete administrator login and permission system is not implemented; use a trusted network. See the [User guide](USER_GUIDE.en.md) for switching, mobile access and backups.
+If `5000` is taken by another program (for example macOS "AirPlay Receiver"), the app automatically uses a nearby port. Use the address shown in the program window.
+
+## ⚠️ Scope of use (must read)
+
+- **Clocking in over the public internet is strictly forbidden.** This system is designed only for the local network of one shop or office (the same Wi-Fi). **Do not** set up port forwarding, tunnelling, a public IP, cloud hosting, or anything else that makes the app reachable from outside. It has no protection for public exposure (no HTTPS, personal codes are only four digits); exposing it can lead to forged attendance and leaked employee information.
+- **The admin pages can only be opened on the computer that runs the program.** Phones and other computers on the network can clock in and submit availability, but cannot open Admin or call admin functions. There is no administrator account or password, so protect that computer itself (login password, lock the screen when away).
+- Employees being unable to clock in from outside is intentional, not a fault. The administrator adds missed records in Admin.
+
+See the [User guide](USER_GUIDE.en.md) for operation, mobile access and backups, and the [Changelog](CHANGELOG.md) for changes.
 
 <h1>Download</h1>
 
