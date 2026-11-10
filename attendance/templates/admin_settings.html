@@ -1,7 +1,38 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="admin-page">
-    <h1>📧 {{ _('settings.title') }}</h1>
+    <h1>🛠️ {{ _('settings.page_title') }}</h1>
+
+    <h2 style="font-size:1.15rem;margin:24px 0 8px;">⏰ {{ _('rules.title') }}</h2>
+    <div class="admin-form" style="max-width:500px;">
+        <div class="form-row">
+            <label>{{ _('rules.work_hours') }}</label>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <input type="time" id="work_start"> <span>–</span> <input type="time" id="work_end">
+            </div>
+            <small style="color:var(--text-secondary);font-size:0.75rem;">{{ _('rules.work_hours_hint') }}</small>
+        </div>
+        <div class="form-row">
+            <label style="display:flex;gap:8px;align-items:center;cursor:pointer;">
+                <input type="checkbox" id="lunch_enabled" style="width:18px;height:18px;"> {{ _('rules.lunch') }}
+            </label>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <input type="time" id="lunch_start"> <span>–</span> <input type="time" id="lunch_end">
+            </div>
+            <small style="color:var(--text-secondary);font-size:0.75rem;">{{ _('rules.lunch_hint') }}</small>
+        </div>
+        <div class="form-row">
+            <label for="grace_minutes">{{ _('rules.grace') }}</label>
+            <input type="number" id="grace_minutes" min="0" max="240">
+            <small style="color:var(--text-secondary);font-size:0.75rem;">{{ _('rules.grace_hint') }}</small>
+        </div>
+        <div class="form-actions">
+            <button class="btn btn-primary" onclick="saveRules()">💾 {{ _('rules.save') }}</button>
+            <span id="rules-msg" style="font-size:0.85rem;margin-left:8px;" role="status"></span>
+        </div>
+    </div>
+
+    <h2 style="font-size:1.15rem;margin:32px 0 8px;">📧 {{ _('settings.title') }}</h2>
     <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:20px;">
         {{ _('settings.description') }}
     </p>
@@ -71,6 +102,36 @@ function loadSettings() {
         });
 }
 
+const RULE_TIMES = ['work_start', 'work_end', 'lunch_start', 'lunch_end'];
+
+function showRules(rules) {
+    for (const key of RULE_TIMES) document.getElementById(key).value = rules[key];
+    document.getElementById('lunch_enabled').checked = !!rules.lunch_enabled;
+    document.getElementById('grace_minutes').value = rules.grace_minutes;
+}
+
+function loadRules() {
+    fetch('/api/rules').then(r => r.json()).then(data => { if (data.ok) showRules(data.rules); });
+}
+
+async function saveRules() {
+    const message = document.getElementById('rules-msg');
+    const body = {lunch_enabled: document.getElementById('lunch_enabled').checked,
+                  grace_minutes: document.getElementById('grace_minutes').value};
+    for (const key of RULE_TIMES) body[key] = document.getElementById(key).value;
+    message.textContent = '⏳ ' + tr('settings.saving');
+    try {
+        const r = await fetch('/api/rules', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+        const data = await r.json();
+        if (!r.ok || !data.ok) throw new Error(data.msg || tr('settings.failed'));
+        showRules(data.rules);
+        message.textContent = '✅ ' + tr('settings.saved');
+    } catch (error) {
+        message.textContent = '❌ ' + (error.message || tr('settings.failed'));
+    }
+    setTimeout(() => { message.textContent = ''; }, 4000);
+}
+
 function saveSettings() {
     const keys = ['smtp_server','smtp_port','smtp_user','smtp_password',
                   'email_from','admin_email','late_notify_minutes'];
@@ -93,5 +154,7 @@ function saveSettings() {
     });
 }
 
+loadSettings();
+loadRules();
 </script>
 {% endblock %}

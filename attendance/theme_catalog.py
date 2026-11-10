@@ -11,4 +11,5 @@ THEMES = {
  'arcade': dict(name='像素街机', template='clock_collection.html', subtitle='复古游戏 · 今日通关', accent='#f6ee79', bg='#29203e', mark='+', label='READY PLAYER ONE', animation='金币跳跃'),
  'candy': dict(name='糖果气泡', template='clock_collection.html', subtitle='轻盈软糖 · 彩纸庆祝', accent='#9063c3', bg='#f3e9fc', mark='♡', label='MAKE TODAY A SWEET DAY', animation='彩纸绽放'),
  'mono': dict(name='极简黑白', template='clock_collection.html', subtitle='克制排版 · 一笔确认', accent='#202020', bg='#f0f0ed', mark='↗', label='MAKE IT COUNT.', animation='勾线绘制'),
+ 'planet': dict(name='小小星球', template='clock_planet.html', subtitle='低多边形 3D 星球 · 昼夜随时间变化', accent='#ffd166', bg='#0f1b3d', mark='✦', label='YOUR LITTLE WORLD', animation='星环绽放'),
 }

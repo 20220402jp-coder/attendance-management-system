@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="{{ current_lang }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ _('app.title') }} · {{ design.name }}</title>
+<link rel="stylesheet" href="/static/themes/planet.css?v=1">
+</head>
+<body class="theme-planet" data-daypart="day" style="--accent:{{ design.accent }};--base:{{ design.bg }}">
+<div id="planet-scene" class="planet-scene"></div>
+<div class="planet-fallback" aria-hidden="true"><span></span></div>
+<header class="planet-header">
+  <span class="planet-brand">{{ design.mark }} &nbsp; {{ design.name }}</span>
+  <nav class="planet-links">
+    <a href="/schedule/?lang={{ current_lang }}">{{ _('nav.preferences') }} ↗</a>
+    <span class="planet-langs">{% for code,label in langs %}<a href="?lang={{ code }}"{% if code == current_lang %} aria-current="true"{% endif %}>{{ label }}</a>{% endfor %}</span>
+  </nav>
+</header>
+<main class="planet-main">
+  <section class="planet-stage" aria-label="{{ design.name }}">
+    <div class="planet-time">
+      <p class="planet-kicker">{{ design.label }}</p>
+      <div><time id="clock-time">--:--</time><span id="clock-seconds"></span></div>
+      <p id="date"></p>
+      <p class="planet-daypart"><span id="daypart" data-dawn="{{ _('planet.dawn') }}" data-day="{{ _('planet.day') }}" data-dusk="{{ _('planet.dusk') }}" data-night="{{ _('planet.night') }}"></span><span class="planet-hint">{{ _('planet.drag_hint') }}</span></p>
+    </div>
+  </section>
+  <section class="attendance-card planet-card">
+    <div class="card-heading"><h1>{{ _('nav.clock') }}</h1><span id="status">—</span></div>
+    <label for="employee-select">{{ _('stats.employee') }}</label>
+    <div class="employee-picker"><span id="avatar">·</span>{% include 'clock_identity_picker.html' %}</div>
+    {% if not employees %}<p class="empty">{{ _('home.no_employees') }} <a href="/admin/employees">{{ _('home.add_employee') }}</a></p>{% endif %}
+    <div class="shift"><span>{{ _('admin.schedule') }}</span><strong id="schedule-text">—</strong></div>
+    <button id="clock-btn" disabled><span>…</span><span aria-hidden="true">→</span></button>
+    <p id="clock-result" role="status" aria-live="polite"></p>
+  </section>
+</main>
+<footer class="planet-footer">{{ design.label }} · {{ _('app.title') }}</footer>
+{% include 'clock_feedback.html' %}
+<script id="clock-boot" type="application/json">{{ clock_boot|tojson }}</script>
+<script type="module" src="/static/themes/clock.js?v=5"></script>
+</body>
+</html>

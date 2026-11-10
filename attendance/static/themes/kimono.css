@@ -1,1 +1,128 @@
-:root{--pink:#da7898;--ink:#443b48;--muted:#aaa0aa}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:#faf7fa;color:var(--ink);font:14px/1.5 -apple-system,BlinkMacSystemFont,'Noto Sans SC',sans-serif;display:grid;place-items:center}main{width:min(740px,90vw);padding:28px 0}.top{display:flex;justify-content:space-between;align-items:center;padding:0 5px 20px;font-weight:600}.top small{font-weight:400;color:var(--muted);font-size:11px}.card{display:grid;grid-template-columns:1fr 1fr;background:white;border:1px solid #eee7ee;border-radius:26px;padding:24px;gap:12px;box-shadow:0 15px 55px #8d668009}.character{position:relative;min-height:330px;display:flex;align-items:end;justify-content:center;padding-bottom:10px}.halo{position:absolute;width:250px;height:250px;border-radius:50%;background:linear-gradient(145deg,#ffedf3,#f5ecff);top:32px;left:50%;transform:translateX(-50%)}#scene{position:absolute;inset:-5px -15px 32px}canvas{display:block;width:100%;height:100%}button,select{font:inherit;cursor:pointer}button:focus-visible,select:focus-visible{outline:3px solid #ecc3d6;outline-offset:4px}#preview-bow{position:relative;border:0;background:transparent;color:#c786a1;font-size:12px;padding:6px 15px}.controls{padding:10px 12px}.clock{display:flex;align-items:baseline;gap:8px;line-height:1.15}time{font-size:56px;letter-spacing:-2px;font-weight:500;font-variant-numeric:tabular-nums}#clock-seconds{color:#c5bcc6;font-size:19px;font-variant-numeric:tabular-nums}.date{color:var(--muted);font-size:11px;margin:8px 0 25px}label{font-size:11px;color:#9d919f;display:block;margin-bottom:8px}.employee-picker{display:flex;align-items:center;gap:8px;border:1px solid #eee7ee;border-radius:10px;padding:10px;background:#fdfbfd}#avatar{display:grid;place-items:center;background:#f6dfeb;color:#c780a1;border-radius:50%;width:28px;height:28px;font-size:11px;flex-shrink:0}select{background:none;border:0;color:var(--ink);width:100%;min-width:0;font-size:12px;padding:3px}.shift{display:flex;justify-content:space-between;color:#aaa0aa;font-size:11px;margin:14px 0 22px}.shift .done{color:#78997f}.primary{border:0;border-radius:11px;background:var(--pink);color:white;width:100%;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;font-size:14px;transition:background .2s,transform .2s}.primary:hover{background:#cc678a;transform:translateY(-1px)}.primary:disabled{background:#b5c6b5;cursor:default;transform:none}#feedback{text-align:center;font-size:11px;color:#a88c9e;min-height:18px;margin:13px 0 0}.note{font-size:10px;color:#b4aab7;text-align:center;margin:18px 0 0}.loading{position:absolute;top:50%;text-align:center;width:100%;color:var(--muted)}dialog{border:0;border-radius:0;width:350px;max-width:calc(100% - 28px);padding:10px 27px 16px;background:transparent;color:var(--ink);text-align:center;box-shadow:none}dialog::backdrop{background:transparent;backdrop-filter:blur(7px)}#close-modal{position:absolute;right:13px;top:9px;border:0;background:none;color:#ac9baa;font-size:24px;z-index:2}#modal-scene{height:270px}dialog h2{font-size:23px;margin:0 0 7px;font-weight:600}#success-detail{color:#a595a4;font-size:11px;margin:0}.thanks{font-size:13px;color:#c17c9b;margin:12px 0 22px}#replay{border:0;background:none;color:#b2a0af;font-size:10px;margin-top:10px;padding:5px}.modal-open #scene{visibility:hidden}@media(max-width:580px){main{width:min(380px,90vw);padding:20px 0}.top{padding-bottom:13px}.card{grid-template-columns:1fr;padding:16px 23px;gap:0}.character{min-height:210px;padding-bottom:0}.halo{width:170px;height:170px;top:10px}#scene{inset:-18px 0 12px}#preview-bow{font-size:11px}.controls{padding:15px 0 3px}.clock{justify-content:center}time{font-size:47px}.date{text-align:center;margin:5px 0 20px}.shift{margin-bottom:18px}#feedback{margin-bottom:8px}#modal-scene{height:250px}}@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+/* Kimono · a gentle spring morning */
+:root{--pink:#e47f9d;--plum:#b5577a;--ink:#4a3b45;--muted:#a3939f;--cream:#fffaf6;--gold:#e9b85a;--leaf:#8fae8b}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{min-height:100vh;color:var(--ink);font:14px/1.55 -apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans SC','Noto Sans JP',sans-serif;
+  background:radial-gradient(ellipse at 15% 0%,#ffe3ea 0,transparent 55%),radial-gradient(ellipse at 100% 100%,#efe4fb 0,transparent 55%),linear-gradient(165deg,#fff6f2,#fdeef2 55%,#f6effb);
+  display:flex;flex-direction:column;align-items:center;overflow-x:hidden}
+button,select{font:inherit;cursor:pointer}
+a{color:inherit}
+button:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid #f0b6c8;outline-offset:4px}
+
+/* falling petals and the sakura branch */
+.petals{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+.petals i{position:absolute;top:-30px;left:calc(var(--i) * 7.3% + 2%);width:12px;height:9px;border-radius:12px 1px 12px 1px;background:linear-gradient(135deg,#ffd3df,#f6a3ba);opacity:.75;
+  animation:fall calc(11s + var(--i) * .7s) linear infinite;animation-delay:calc(var(--i) * -1.9s)}
+.petals i:nth-child(3n){width:9px;height:7px;opacity:.55}
+@keyframes fall{0%{transform:translate(0,-5vh) rotate(0)}25%{transform:translate(28px,25vh) rotate(90deg)}50%{transform:translate(-14px,55vh) rotate(200deg)}75%{transform:translate(24px,80vh) rotate(290deg)}100%{transform:translate(-8px,110vh) rotate(400deg)}}
+.branch{position:fixed;top:-6px;left:-10px;width:min(360px,60vw);z-index:0;pointer-events:none;filter:drop-shadow(0 6px 10px #b5577a1a)}
+
+main{position:relative;z-index:1;width:min(900px,92vw);padding:26px 0 18px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:0 6px 18px;font-size:13px}
+.brand{font-weight:600;letter-spacing:2px;color:var(--plum)}
+.top nav{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:flex-end;font-size:12px}
+.top nav a{text-decoration:none;opacity:.8}.top nav a:hover{opacity:1}
+.langs{display:inline-flex;gap:3px;padding-left:12px;border-left:1px solid #e9d7df}
+.langs a{padding:3px 8px;border-radius:999px}
+.langs a[aria-current]{background:#fbe1ea;color:var(--plum);opacity:1}
+
+/* card */
+.card{display:grid;grid-template-columns:1.05fr 1fr;gap:10px;padding:18px;border-radius:34px;background:#ffffffc4;border:1px solid #fff;
+  box-shadow:0 30px 70px #b5577a1f,0 2px 0 #fff inset;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+
+/* stage: an arched window with a soft sky */
+.stage{position:relative;min-height:470px;display:flex;align-items:flex-end;justify-content:center}
+.window{position:absolute;inset:0 6px 0;border-radius:220px 220px 26px 26px;overflow:hidden;
+  background:linear-gradient(180deg,#ffe9ef 0%,#fff4ea 55%,#fdf0f4 100%);box-shadow:inset 0 0 0 6px #fff,inset 0 0 0 7px #f4d9e2}
+.sun{position:absolute;width:150px;height:150px;border-radius:50%;left:50%;top:70px;transform:translateX(-50%);background:radial-gradient(circle,#ffd9b3 0,#ffc4cf 55%,#ffc4cf00 72%);opacity:.9}
+.cloud{position:absolute;height:22px;border-radius:22px;background:#fff;opacity:.85;animation:drift 18s ease-in-out infinite alternate}
+.cloud::before,.cloud::after{content:'';position:absolute;background:#fff;border-radius:50%}
+.cloud::before{width:28px;height:28px;left:14px;top:-14px}.cloud::after{width:20px;height:20px;left:36px;top:-9px}
+.c1{width:84px;left:12%;top:110px}.c2{width:64px;right:10%;top:175px;animation-duration:23s;opacity:.7}
+@keyframes drift{to{transform:translateX(22px)}}
+.waves{position:absolute;left:0;right:0;bottom:0;height:110px;opacity:.55;
+  background:radial-gradient(circle at 50% 100%,transparent 0 9px,#f6c3d2 10px 12px,transparent 13px 19px,#f6c3d2 20px 22px,transparent 23px 29px,#f6c3d2 30px 32px,transparent 33px) 0 0/64px 32px,
+             radial-gradient(circle at 50% 100%,transparent 0 9px,#f6c3d2 10px 12px,transparent 13px 19px,#f6c3d2 20px 22px,transparent 23px 29px,#f6c3d2 30px 32px,transparent 33px) 32px 16px/64px 32px;
+  -webkit-mask:linear-gradient(transparent,#000 60%);mask:linear-gradient(transparent,#000 60%)}
+#scene{position:relative;width:min(100%,330px);height:100%;max-height:470px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px}
+.loading{align-self:center;color:#e9a7bb;font-size:40px;animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.35}}
+#preview-bow{position:absolute;right:20px;bottom:18px;width:42px;height:42px;border-radius:50%;border:0;background:#fff;color:var(--pink);font-size:18px;box-shadow:0 6px 16px #b5577a2a;transition:transform .2s}
+#preview-bow:hover{transform:scale(1.08)}
+
+/* the girl */
+.km-wrap{width:100%;height:100%;display:flex;align-items:flex-end;justify-content:center}
+.km-girl{width:100%;height:auto;max-height:100%;overflow:visible;filter:drop-shadow(0 10px 14px #9b406722)}
+.km-headpart{transform-box:view-box;transform-origin:180px 230px}
+.km-body{transform-box:view-box;transform-origin:180px 506px;animation:breathe 4.2s ease-in-out infinite}
+@keyframes breathe{50%{transform:scale(1.006,1.012)}}
+.km-hairback{transform-box:view-box;transform-origin:180px 80px;animation:sway 6s ease-in-out infinite}
+.km-lock-l{transform-box:view-box;transform-origin:108px 142px;animation:sway 5s ease-in-out infinite}
+.km-lock-r{transform-box:view-box;transform-origin:252px 142px;animation:sway 5s ease-in-out infinite reverse}
+@keyframes sway{0%,100%{transform:rotate(-1.2deg)}50%{transform:rotate(1.2deg)}}
+.km-beads{transform-box:view-box;transform-origin:252px 112px;animation:dangle 3.2s ease-in-out infinite}
+@keyframes dangle{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
+.km-eyes{transform-box:fill-box;transform-origin:center 60%;animation:blink 4.6s infinite}
+@keyframes blink{0%,94%,100%{transform:scaleY(1)}96.5%{transform:scaleY(.08)}}
+.km-eye-happy,.km-mouth-happy{display:none}
+.happy .km-eye,.happy .km-mouth{display:none}
+.happy .km-eye-happy,.happy .km-mouth-happy{display:inline}
+.happy .km-eyes{animation:none}
+.km-hearts{opacity:0;transform-box:view-box}
+
+/* controls */
+.controls{padding:26px 26px 18px;display:flex;flex-direction:column;justify-content:center}
+.kicker{margin:0 0 6px;font-size:10px;letter-spacing:4px;color:#d08aa3}
+.clock{display:flex;align-items:baseline;gap:8px;line-height:1.1}
+time{font:300 62px/1 'Hiragino Mincho ProN','Yu Mincho','Noto Serif JP','Songti SC',serif;letter-spacing:-1px;font-variant-numeric:tabular-nums;color:#3f3039}
+#clock-seconds{color:#d3a9b8;font-size:20px;font-variant-numeric:tabular-nums}
+.date{color:var(--muted);font-size:12px;margin:10px 0 26px}
+label{font-size:11px;color:#a8939f;display:block;margin-bottom:8px;letter-spacing:1px}
+.employee-picker{display:flex;align-items:center;gap:10px;border:1px solid #f1dfe6;border-radius:16px;padding:10px 12px;background:#fffafc;min-height:54px}
+#avatar{display:grid;place-items:center;width:34px;height:34px;flex-shrink:0;border-radius:50%;background:linear-gradient(135deg,#ffd3df,#f6a3ba);color:#fff;font-weight:700;box-shadow:0 4px 10px #e47f9d40}
+select{background:none;border:0;color:var(--ink);width:100%;min-width:0;font-size:13px;padding:3px}
+.shift{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;align-items:center;margin:16px 0 22px;padding:12px 4px;border-top:1px dashed #efd6df;border-bottom:1px dashed #efd6df;font-size:12px;color:var(--muted)}
+.shift strong{justify-self:end;color:var(--ink);font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:1px}
+#status{grid-column:1/-1;color:var(--leaf);font-size:11px}
+.primary{position:relative;overflow:hidden;border:0;border-radius:18px;width:100%;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;font-size:15px;font-weight:600;letter-spacing:2px;color:#fff;
+  background:linear-gradient(120deg,#f29bb4,var(--pink) 50%,#d9668c);box-shadow:0 12px 26px #e47f9d55;transition:transform .2s,box-shadow .2s}
+.primary:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 16px 30px #e47f9d66}
+.primary:active:not(:disabled){transform:scale(.98)}
+.primary:not(:disabled)::after{content:'';position:absolute;top:0;bottom:0;left:-40%;width:28%;background:linear-gradient(100deg,transparent,#fff8,transparent);transform:skewX(-20deg);animation:shine 3.6s ease-in-out infinite}
+@keyframes shine{0%,60%{left:-40%}100%{left:130%}}
+.primary:disabled{background:#e9dde3;color:#a8939f;box-shadow:none;cursor:default}
+#clock-result{font-size:12px;min-height:20px;text-align:center;color:#b07a90;margin:12px 0 0}
+.note{font-size:11px;color:var(--muted)}
+.foot{text-align:center;font-size:10px;letter-spacing:3px;color:#c9adba;margin:18px 0 0}
+
+/* success dialog */
+dialog{border:0;border-radius:30px;width:360px;max-width:calc(100% - 28px);margin:auto;padding:14px 26px 18px;text-align:center;color:var(--ink);
+  background:linear-gradient(180deg,#fff4f7,#fffaf6);box-shadow:0 30px 80px #9b406738}
+dialog[open]{animation:pop .5s cubic-bezier(.2,.9,.25,1.15) backwards}
+@keyframes pop{from{opacity:0;transform:translateY(24px) scale(.92)}}
+dialog::backdrop{background:#fbe5ec88;backdrop-filter:blur(6px)}
+#close-modal{position:absolute;right:14px;top:10px;border:0;background:none;color:#c3a3b1;font-size:24px;z-index:2}
+#modal-scene{height:280px;display:flex;align-items:flex-end;justify-content:center;border-radius:160px 160px 20px 20px;background:linear-gradient(180deg,#ffe6ee,#fff6ef);margin-bottom:12px;overflow:hidden}
+#modal-scene .km-wrap{width:210px}
+dialog h2{font-size:23px;margin:0 0 6px;font-weight:600;color:#a14a6d}
+#success-detail{color:#a595a4;font-size:12px;margin:0}
+.thanks{font-size:13px;color:#c17c9b;margin:10px 0 20px}
+#continue{justify-content:center;gap:8px}
+#replay{border:0;background:none;color:#c3a3b1;font-size:16px;margin-top:8px;padding:6px 14px}
+
+/* phones */
+@media(max-width:720px){
+  main{width:min(440px,92vw);padding-top:16px}
+  .card{grid-template-columns:1fr;padding:12px;gap:0;border-radius:28px}
+  .stage{min-height:330px}
+  #scene{width:min(100%,250px);max-height:330px}
+  .window{inset:0 0 0;border-radius:170px 170px 22px 22px}
+  .sun{width:110px;height:110px;top:46px}
+  .controls{padding:20px 10px 10px}
+  .clock{justify-content:center}
+  .kicker,.date{text-align:center}
+  time{font-size:52px}
+  .branch{width:220px}
+}
+@media(max-width:400px){.top nav{gap:8px}.langs{padding-left:8px}}
+@media(prefers-reduced-motion:reduce){.petals,.cloud,.km-body,.km-hairback,.km-lock-l,.km-lock-r,.km-beads,.km-eyes,.primary::after,dialog[open],.loading{animation:none!important}.petals{display:none}}

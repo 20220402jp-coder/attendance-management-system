@@ -156,7 +156,7 @@
   <section id="code-panel" hidden class="code-panel">
     <h2 id="code-name" class="access-heading"></h2>
     <p class="access-heading">{{ _('access.enter') }}</p>
-    <input id="code-input" type="password" inputmode="none" autocomplete="off" maxlength="3" aria-label="{{ _('access.enter') }}" oninput="sanitizeCode()">
+    <input id="code-input" type="password" inputmode="none" autocomplete="off" maxlength="4" aria-label="{{ _('access.enter') }}" oninput="sanitizeCode()">
     <div class="number-pad">
       {% for digit in [1,2,3,4,5,6,7,8,9] %}<button type="button" onclick="pressDigit('{{ digit }}')">{{ digit }}</button>{% endfor %}
       <button type="button" class="word-key" onclick="clearCode()">{{ _('access.clear') }}</button>
@@ -308,11 +308,11 @@ function chooseEmployee(button) {
     document.getElementById('code-panel').hidden = false;
     clearCode(); announce(''); codeInput.focus();
 }
-function sanitizeCode(){codeInput.value=codeInput.value.replace(/[^0-9]/g,'').slice(0,3);document.getElementById('login-button').disabled=busy || codeInput.value.length!==3;}
-function pressDigit(d){if(!busy){codeInput.value=(codeInput.value+d).slice(0,3);sanitizeCode();}}
+function sanitizeCode(){codeInput.value=codeInput.value.replace(/[^0-9]/g,'').slice(0,4);document.getElementById('login-button').disabled=busy || codeInput.value.length<3;}
+function pressDigit(d){if(!busy){codeInput.value=(codeInput.value+d).slice(0,4);sanitizeCode();}}
 function clearCode(){codeInput.value='';sanitizeCode();}
 function eraseCode(){codeInput.value=codeInput.value.slice(0,-1);sanitizeCode();}
-codeInput.addEventListener('keydown',event=>{if(event.key==='Enter' && codeInput.value.length===3){event.preventDefault();login();}});
+codeInput.addEventListener('keydown',event=>{if(event.key==='Enter' && codeInput.value.length>=3){event.preventDefault();login();}});
 async function api(url,body,token=accessToken){
     const response=await fetch(url,{method:body===undefined?'GET':'POST',headers:{'Content-Type':'application/json','X-Schedule-Token':token},...(body===undefined?{}:{body:JSON.stringify(body)})});
     const data=await response.json();
@@ -323,7 +323,7 @@ async function api(url,body,token=accessToken){
     return data;
 }
 async function login(){
-    if(busy || codeInput.value.length!==3)return;
+    if(busy || codeInput.value.length<3)return;
     busy=true;sanitizeCode();
     const employeeId=currentEmployeeId;
     try{
