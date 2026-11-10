@@ -77,5 +77,6 @@ python build.py
 
 - 从 `main` 拉分支（`fix/…`、`feat/…`、`docs/…`），通过 Pull Request 合并，不直接推送 `main`。
 - 提交信息使用 Conventional Commits：`fix(attendance): …`、`feat(admin): …`、`docs: …`。
-- 对使用者有影响的改动写进 `CHANGELOG.md` 的「未发布」一节。
+- 对使用者有影响的改动写进 `CHANGELOG.md` 的「下一个版本」一节，中文、日文、英文三部分都要写。
+- `README` 和 `USER_GUIDE` 各有三种语言，结构保持一致；改一份就要同步另外两份。
 - 三种语言的翻译键必须一致（`tests/test_i18n.py` 会检查）。

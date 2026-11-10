@@ -1,39 +1,18 @@
-<h1 align="center">📋 Attendance Management System</h1>
+<h1 align="center">📋 Attendance System</h1>
 
 <h2 align="center"><a href="README.md">中文</a> ｜ <a href="README.ja.md">日本語</a> ｜ English</h2>
 
-This system is made for small businesses that need a simple attendance and shift management tool. It supports Chinese, English and Japanese.
+An attendance clock for small shops and small companies. It runs on one computer at your workplace and employees clock in by scanning a QR code with their phones. No computer skills and no online sign-up are needed. Available in Chinese, Japanese and English.
 
-## Current version and features
+## What it does
 
-The published download is **v1.0.4**, including personal-code availability, QR-code clock-in, and access-control updates.
-
-- Employee management, weekly working hours, availability, automatic scheduling, attendance corrections and report export.
-- **12 selectable clock designs**, including the original page and the new 3D "Tiny Planet". Every design has a success animation with a shared 3D entrance and confetti.
-- Clock pages, admin pages, the printable QR page, CSV export and messages are available in Chinese, Japanese and English.
-- Preview, apply and restore the previous design from Admin, while keeping the same employee clock URL.
-- Chinese, English and Japanese style management, with previews following the selected language.
-
-## Addresses
-
-While the app is running, open these on its host computer:
-
-| Page | Address |
-| --- | --- |
-| Clock | http://127.0.0.1:5000/ |
-| Admin | http://127.0.0.1:5000/admin/ |
-| Page styles (current source) | http://127.0.0.1:5000/admin/appearance |
-Normal startup uses `5000`. Open the Admin address directly if there is no Admin link. If a desktop shortcut has been created locally, you can use it; the repository does not automatically install desktop shortcuts.
-
-If `5000` is taken by another program (for example macOS "AirPlay Receiver"), the app automatically uses a nearby port. Use the address shown in the program window.
-
-## ⚠️ Scope of use (must read)
-
-- **Clocking in over the public internet is strictly forbidden.** This system is designed only for the local network of one shop or office (the same Wi-Fi). **Do not** set up port forwarding, tunnelling, a public IP, cloud hosting, or anything else that makes the app reachable from outside. It has no protection for public exposure (no HTTPS, personal codes are only four digits); exposing it can lead to forged attendance and leaked employee information.
-- **The admin pages can only be opened on the computer that runs the program.** Phones and other computers on the network can clock in and submit availability, but cannot open Admin or call admin functions. There is no administrator account or password, so protect that computer itself (login password, lock the screen when away).
-- Employees being unable to clock in from outside is intentional, not a fault. The administrator adds missed records in Admin.
-
-See the [User guide](USER_GUIDE.en.md) for operation, mobile access and backups, and the [Changelog](CHANGELOG.md) for changes.
+- **Clocking:** employees scan the code, enter their personal code and tap check in or check out.
+- **Today's attendance:** the Admin home page shows who is in, who has not arrived and who forgot to check out yesterday.
+- **Corrections and leave:** fix any day's record in one click.
+- **Reports and export:** days worked, hours, and times late or left early for each person, exportable for payroll in Excel.
+- **Scheduling (optional):** employees submit the days they would like to work and the system builds next month's schedule.
+- **12 clock page styles:** from a classic clock to the 3D "Tiny Planet", each with its own success animation, switchable in Admin.
+- **Automatic backups:** data is backed up every day, and you can download a copy at any time.
 
 <h1>Download</h1>
 
@@ -45,32 +24,45 @@ See the [User guide](USER_GUIDE.en.md) for operation, mobile access and backups,
 
 <h2>🐧 <a href="https://github.com/20220402jp-coder/attendance-management-system/releases/download/v1.0.4/AttendanceSystem-1.0.4-Linux-x64.zip">Download for Linux</a></h2>
 
+The current download is v1.0.4. This page and the user guide describe the latest source code; some features arrive with the next release. See the [Changelog](CHANGELOG.md) for the differences.
+
 <h1>How to use it</h1>
 
-<h2>1. Download the file for your computer</h2>
+<h2>1. Download and extract</h2>
 
-<h2>2. Unzip the downloaded file</h2>
+Download only the one file that matches your computer. It is a zip file, so **extract it before running**:
 
-Choose the ZIP for your operating system and processor. Extract it, then open the new folder and run the program inside. On Windows, right-click the ZIP and choose “Extract All”; on macOS, double-click the ZIP; on Linux, choose “Extract Here”. Do not run the program from the ZIP preview or copy only the executable.
+- Windows: right-click the zip file and choose "Extract All".
+- Mac: double-click the zip file.
+- Linux: right-click the zip file and choose "Extract Here".
 
-<h2>3. Double-click the program inside</h2>
+<h2>2. Start the program</h2>
 
-The program opens a web page automatically. The first time you use it, open “Admin → Employee Management” and add your employees. Close the program window to stop the system.
+Open the extracted folder and double-click the `AttendanceSystem-...` program inside (on a Mac, right-click it and choose "Open"). After a few seconds a program window appears and the browser opens by itself.
 
-### If Windows shows a security warning
+Keep the program window open. Closing it stops the system.
 
-Confirm the file came from this project's GitHub release page, then click “More info” → “Run anyway”. If “More info” is not shown, download the file again from the release page. A black program window must stay open while the system is running.
+Your computer may show a security prompt the first time:
 
-### If the program will not open on a Mac
+- **Windows** shows "Windows protected your PC": click "More info", then "Run anyway".
+- **Mac** says the developer cannot be verified: go to "System Settings → Privacy & Security", click "Open Anyway", then right-click the program and choose "Open".
 
-Right-click the program and choose “Open”. If it is still blocked, open “System Settings → Privacy & Security” and click “Open Anyway”.
+For other start-up problems, see [Common questions in the user guide](USER_GUIDE.en.md#13-common-questions).
 
-### If the program will not start by double-clicking on Linux
+<h2>3. Add employees and print the QR code</h2>
 
-```bash
-chmod +x AttendanceSystem-*-Linux-*
-```
+1. On this computer, open Admin: `http://127.0.0.1:5000/admin/`
+2. Go to "Employee management" and add an employee. Only a name is needed. After saving, the employee's four-digit personal code is shown; give it to the employee.
+3. Back on the Admin home page, click "Clock-in QR code", print it and put it up at your workplace.
 
-You do not need to install Python or any other software.
+Employees can now scan the code, enter their personal code and clock in. Their phones must be on the same Wi-Fi as this computer.
 
-<h2>📖 <a href="USER_GUIDE.en.md">Open the complete user guide</a></h2>
+## Where it can be used
+
+- **Clocking in over the public internet is strictly forbidden.** Use the system only on the network inside your shop or office, and do not open it to the outside (port forwarding, tunnelling, hosting it in the cloud and so on).
+- **Admin opens only on the computer that runs the program.** Phones and other computers can only clock in and submit availability.
+- Clock records missed while away from the workplace are added by the administrator in Admin.
+
+<h2>📖 <a href="USER_GUIDE.en.md">Open the full user guide</a></h2>
+
+For development and packaging, see [DEVELOPMENT.md](DEVELOPMENT.md).
