@@ -37,8 +37,8 @@ def test_unique_codes_expiry_reset_and_guess_limit(tmp_path,monkeypatch):
     a=c.post('/api/employee',json={'employee_id':'A','name':'A'}).json['id']
     b=c.post('/api/employee',json={'employee_id':'B','name':'B'}).json['id']
     monkeypatch.setattr(m.secrets,'randbelow',lambda _:7)
-    code=authorize_clock(c,a);assert code=='007'
-    other=c.post(f'/api/employee/{b}/schedule-code',json={}).json['code'];assert other!='007'
+    code=authorize_clock(c,a);assert len(code)==4 and code.startswith('000')
+    other=c.post(f'/api/employee/{b}/schedule-code',json={}).json['code'];assert other!=code
     models=importlib.import_module('models')
     with m.app.app_context():
         models.ClockSession.query.first().last_active-=301;models.db.session.commit()

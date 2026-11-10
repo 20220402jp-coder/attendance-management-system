@@ -60,31 +60,73 @@
 .qr-download {
     animation: pulseGlow 2s ease-in-out infinite;
 }
+[hidden] { display: none !important; }
+.dash { max-width: 820px; margin: 32px auto; }
+.dash-card { background: var(--card-bg, #fff); border: 1px solid var(--border); border-radius: 16px; padding: 20px 24px; margin-bottom: 20px; }
+.dash-card h2 { font-size: 1.1rem; margin: 0 0 12px; }
+.dash-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.dash-chip { padding: 4px 12px; border-radius: 999px; background: #f1f5f9; font-size: 0.85rem; }
+.dash-warning { background: #fef3c7; border: 2px solid #f59e0b; color: #78350f; border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.dash-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.dash-links .btn { padding: 16px 24px; font-size: 1.05rem; justify-content: center; }
+.dash-backup { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.dash-muted { color: var(--text-secondary); font-size: 0.85rem; }
 </style>
 {% endblock %}
 {% block content %}
-<div style="max-width:500px;margin:60px auto;">
-    <h1 style="margin-bottom:24px;">⚙️ {{ _('dashboard.title') }}</h1>
-    <div style="display:flex;flex-direction:column;gap:12px;">
-        <a href="/admin/appearance" class="btn btn-primary" style="padding:16px 24px;justify-content:center;">🎨 {{ _('appearance.title') }}</a>
-        <a href="/admin/employees" class="btn btn-primary" style="padding:16px 24px;font-size:1.1rem;justify-content:center;">
-            👥 {{ _('dashboard.employees') }}
-        </a>
-        <a href="/admin/schedule" class="btn btn-primary" style="padding:16px 24px;font-size:1.1rem;justify-content:center;">
-            📅 {{ _('dashboard.schedule') }}
-        </a>
-        <a href="/admin/stats" class="btn btn-primary" style="padding:16px 24px;font-size:1.1rem;justify-content:center;">
-            📊 {{ _('dashboard.stats') }}
-        </a>
-        <a href="/admin/attendance" class="btn btn-primary" style="padding:16px 24px;font-size:1.1rem;justify-content:center;">
-            📝 {{ _('dashboard.attendance') }}
-        </a>
-        <button class="btn btn-primary" onclick="showQR()" style="padding:16px 24px;font-size:1.1rem;cursor:pointer;border:none;border-radius:var(--radius);font-family:inherit;font-weight:600;justify-content:center;">
-            📱 {{ _('dashboard.qrcode') }}
-        </button>
+<div class="dash">
+    <h1 style="margin-bottom:20px;">⚙️ {{ _('dashboard.title') }}</h1>
+
+    <div class="dash-warning" id="qr-warning" hidden>
+        <span>⚠️ {{ _('dashboard.qr_changed') }}</span>
+        <button class="btn btn-primary" onclick="showQR()">📱 {{ _('dashboard.qrcode') }}</button>
     </div>
-    <p style="text-align:center;margin-top:32px;color:var(--text-secondary);font-size:0.85rem;">
-        {{ _('dashboard.direct_access') }}
+
+    <section class="dash-card">
+        <h2>🗓️ {{ _('dashboard.today') }} <span class="dash-muted" id="dash-date"></span></h2>
+        <div class="dash-chips" id="dash-chips"></div>
+        <div class="stats-table-wrap">
+            <table class="table" id="dash-table" hidden>
+                <thead><tr>
+                    <th>{{ _('admin.name') }}</th>
+                    <th>{{ _('dashboard.shift') }}</th>
+                    <th>{{ _('stats.check_in') }}</th>
+                    <th>{{ _('stats.check_out') }}</th>
+                    <th>{{ _('stats.status') }}</th>
+                    <th></th>
+                </tr></thead>
+                <tbody id="dash-body"></tbody>
+            </table>
+        </div>
+        <p class="empty-msg" id="dash-empty">{{ _('dashboard.loading') }}</p>
+    </section>
+
+    <section class="dash-card" id="dash-attention" hidden>
+        <h2>⚠️ {{ _('dashboard.attention') }}</h2>
+        <table class="table"><tbody id="attention-body"></tbody></table>
+    </section>
+
+    <div class="dash-links">
+        <a href="/admin/employees" class="btn btn-primary">👥 {{ _('dashboard.employees') }}</a>
+        <a href="/admin/attendance" class="btn btn-primary">📝 {{ _('dashboard.attendance') }}</a>
+        <a href="/admin/stats" class="btn btn-primary">📊 {{ _('dashboard.stats') }}</a>
+        <a href="/admin/schedule" class="btn btn-primary">📅 {{ _('dashboard.schedule') }}</a>
+        <button class="btn btn-primary" onclick="showQR()" style="cursor:pointer;border:none;border-radius:var(--radius);font-family:inherit;font-weight:600;">📱 {{ _('dashboard.qrcode') }}</button>
+        <a href="/admin/appearance" class="btn btn-primary">🎨 {{ _('appearance.title') }}</a>
+        <a href="/admin/settings" class="btn btn-primary">🛠️ {{ _('settings.page_title') }}</a>
+    </div>
+
+    <section class="dash-card dash-backup">
+        <div>
+            <strong>💾 {{ _('backup.title') }}</strong>
+            <div class="dash-muted" id="backup-last"></div>
+            <div class="dash-muted">{{ _('backup.hint') }}</div>
+        </div>
+        <a href="/api/backup/download" class="btn btn-secondary" onclick="setTimeout(loadDashboard, 1500)">⬇️ {{ _('backup.download') }}</a>
+    </section>
+
+    <p style="text-align:center;margin-top:24px;" class="dash-muted">
+        🔒 {{ _('admin.local_only') }}
     </p>
 </div>
 
@@ -113,7 +155,8 @@ function showQR() {
     document.getElementById('qr-loading').style.display = 'inline';
     document.getElementById('qr-box').innerHTML = '';
 
-    fetch('/api/server-info')
+    document.getElementById('qr-warning').hidden = true;
+    fetch('/api/server-info?remember=1')
         .then(r => r.json())
         .then(info => {
             if (!info.ok) throw new Error(info.msg || tr('dashboard.load_failed'));
@@ -137,6 +180,67 @@ function showQR() {
                 '<span style="color:var(--danger)">❌ ' + err.message + '</span>';
         });
 }
+
+const STATUS_CLASS = {normal: 'status-ok', working: 'status-ok', late: 'status-warn', early_leave: 'status-warn',
+    partial: 'status-warn', pending: '', leave: '', both: 'status-bad', absent: 'status-bad'};
+
+function statusText(row) {
+    const label = row.status === 'leave' ? tr('stats.leave') : tr('status.' + row.status);
+    return row.late && ['working', 'partial'].includes(row.status) ? label + ' · ' + tr('status.late') : label;
+}
+
+function cell(text) {
+    const td = document.createElement('td');
+    td.textContent = text || '—';
+    return td;
+}
+
+function rowElement(row, withDate) {
+    const element = document.createElement('tr');
+    element.append(cell(withDate ? row.name + ' · ' + row.date : row.name), cell(row.shift), cell(row.check_in), cell(row.check_out));
+    const status = document.createElement('td');
+    const badge = document.createElement('span');
+    badge.className = 'status-badge ' + (STATUS_CLASS[row.status] || '');
+    badge.textContent = statusText(row);
+    status.append(badge);
+    const action = document.createElement('td');
+    const link = document.createElement('a');
+    link.className = 'btn btn-sm';
+    link.href = '/admin/attendance?employee=' + encodeURIComponent(row.employee_id) + '&date=' + row.date;
+    link.textContent = '✏️ ' + tr('dashboard.fix');
+    action.append(link);
+    element.append(status, action);
+    return element;
+}
+
+function loadDashboard() {
+    fetch('/api/dashboard/today', {cache: 'no-store'}).then(r => r.json()).then(data => {
+        if (!data.ok) return;
+        document.getElementById('dash-date').textContent = data.date;
+        document.getElementById('qr-warning').hidden = !data.qr_changed;
+        const counts = {};
+        data.rows.forEach(row => { counts[row.status] = (counts[row.status] || 0) + 1; });
+        const chips = document.getElementById('dash-chips');
+        chips.replaceChildren(...Object.entries(counts).map(([status, count]) => {
+            const chip = document.createElement('span');
+            chip.className = 'dash-chip';
+            chip.textContent = (status === 'leave' ? tr('stats.leave') : tr('status.' + status)) + ' ' + count;
+            return chip;
+        }));
+        const body = document.getElementById('dash-body');
+        body.replaceChildren(...data.rows.map(row => rowElement(row, false)));
+        document.getElementById('dash-table').hidden = data.rows.length === 0;
+        const empty = document.getElementById('dash-empty');
+        empty.hidden = data.rows.length > 0;
+        empty.textContent = data.employee_count ? tr('dashboard.nobody') : tr('admin.no_employees');
+        document.getElementById('attention-body').replaceChildren(...data.attention.map(row => rowElement(row, true)));
+        document.getElementById('dash-attention').hidden = data.attention.length === 0;
+        document.getElementById('backup-last').textContent = data.last_backup
+            ? tr('backup.last') + ' ' + data.last_backup : tr('backup.none');
+    }).catch(() => {});
+}
+loadDashboard();
+setInterval(loadDashboard, 60000);
 
 function closeQR() {
     document.getElementById('qr-overlay').classList.remove('show');

@@ -10,9 +10,9 @@
         <div class="filter-row">
             <label>{{ _('stats.employee') }}</label>
             <select id="stats-employee">
-                <option value="">{{ _('stats.employee') }}...</option>
+                <option value="">{{ _('stats.all_employees') }}</option>
                 {% for emp in employees %}
-                <option value="{{ emp.employee_id }}">{{ emp.name }} ({{ emp.department or '-' }})</option>
+                <option value="{{ emp.employee_id }}">{{ emp.name }}{% if emp.department %} ({{ emp.department }}){% endif %}{% if not emp.is_active %} · {{ _('admin.active_no') }}{% endif %}</option>
                 {% endfor %}
             </select>
         </div>
@@ -25,12 +25,37 @@
             <input type="date" id="stats-end">
         </div>
         <div class="filter-row">
+            <button class="btn btn-sm" onclick="setMonth(0)">{{ _('stats.this_month') }}</button>
+            <button class="btn btn-sm" onclick="setMonth(-1)">{{ _('stats.last_month') }}</button>
             <button class="btn btn-primary" onclick="queryStats()">{{ _('stats.query') }}</button>
-            <button class="btn btn-secondary" onclick="exportCSV()">{{ _('stats.export') }}</button>
+            <button class="btn btn-secondary" onclick="exportCSV('summary')">{{ _('stats.export_summary') }}</button>
+            <button class="btn btn-secondary" onclick="exportCSV('detail')">{{ _('stats.export') }}</button>
         </div>
     </div>
 
     <div id="stats-summary" class="stats-summary"></div>
+
+    <h2 style="font-size:1.1rem;margin:24px 0 8px;">👥 {{ _('stats.by_person') }}</h2>
+    <div class="stats-table-wrap">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>{{ _('admin.name') }}</th>
+                    <th>{{ _('stats.scheduled_days') }}</th>
+                    <th>{{ _('stats.working_days') }}</th>
+                    <th>{{ _('stats.total_hours') }}</th>
+                    <th>{{ _('stats.late_count') }}</th>
+                    <th>{{ _('stats.early_count') }}</th>
+                    <th>{{ _('stats.absent') }}</th>
+                    <th>{{ _('stats.leave') }}</th>
+                    <th>{{ _('stats.partial') }}</th>
+                </tr>
+            </thead>
+            <tbody id="monthly-body">
+                <tr><td colspan="9" class="empty-msg">{{ _('stats.no_data') }}</td></tr>
+            </tbody>
+        </table>
+    </div>
 
     <div class="stats-charts">
         <div class="chart-container">
@@ -41,11 +66,14 @@
         </div>
     </div>
 
+    <h2 style="font-size:1.1rem;margin:24px 0 4px;">📋 {{ _('stats.detail') }}</h2>
+    <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:8px;">{{ _('stats.click_to_fix') }}</p>
     <div class="stats-table-wrap">
         <table class="table" id="stats-table">
             <thead>
                 <tr>
                     <th>{{ _('stats.date') }}</th>
+                    <th>{{ _('admin.name') }}</th>
                     <th>{{ _('stats.check_in') }}</th>
                     <th>{{ _('stats.check_out') }}</th>
                     <th>{{ _('stats.status') }}</th>
@@ -53,7 +81,7 @@
                 </tr>
             </thead>
             <tbody id="stats-body">
-                <tr><td colspan="5" class="empty-msg">{{ _('stats.no_data') }}</td></tr>
+                <tr><td colspan="6" class="empty-msg">{{ _('stats.no_data') }}</td></tr>
             </tbody>
         </table>
     </div>
@@ -63,28 +91,38 @@
 let hoursChart = null;
 let statusChart = null;
 
+function localDate(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+// offset 0 = 本月（到今天为止），-1 = 上月整月
+function setMonth(offset) {
+    const now = new Date();
+    const first = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+    const last = offset === 0 ? now : new Date(now.getFullYear(), now.getMonth() + offset + 1, 0);
+    document.getElementById('stats-start').value = localDate(first);
+    document.getElementById('stats-end').value = localDate(last);
+    queryStats();
+}
+
 function getDateRange() {
     const now = new Date();
-    const start = document.getElementById('stats-start').value;
-    const end = document.getElementById('stats-end').value;
-    function localDate(d) {
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return y + '-' + m + '-' + day;
+    if (!document.getElementById('stats-start').value) {
+        document.getElementById('stats-start').value = localDate(new Date(now.getFullYear(), now.getMonth(), 1));
     }
-    if (!start) {
-        const first = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        document.getElementById('stats-start').value = localDate(first);
-    }
-    if (!end) {
-        const last = new Date(now.getFullYear(), now.getMonth(), 0);
-        document.getElementById('stats-end').value = localDate(last);
+    if (!document.getElementById('stats-end').value) {
+        document.getElementById('stats-end').value = localDate(now);
     }
     return {
         start_date: document.getElementById('stats-start').value,
         end_date: document.getElementById('stats-end').value,
     };
+}
+
+function escapeHtml(text) {
+    const holder = document.createElement('span');
+    holder.textContent = text == null ? '' : String(text);
+    return holder.innerHTML;
 }
 
 // Auto-query on load
@@ -111,9 +149,19 @@ function queryStats() {
     })
     .then(r => r.json())
     .then(data => {
+        if (!Array.isArray(data)) { alert(data.msg || tr('stats.bad_range')); return; }
         renderTable(data);
         renderChart(data);
     });
+
+    // 按人汇总
+    fetch('/api/stats/monthly', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body),
+    })
+    .then(r => r.json())
+    .then(data => { if (data.ok) renderMonthly(data.employees); });
 
     // Fetch summary
     fetch('/api/stats/summary', {
@@ -127,8 +175,30 @@ function queryStats() {
     });
 }
 
+function renderMonthly(list) {
+    const tbody = document.getElementById('monthly-body');
+    if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="9" class="empty-msg">' + tr('stats.no_data') + '</td></tr>';
+        return;
+    }
+    tbody.innerHTML = list.map(item => `
+        <tr>
+            <td>${escapeHtml(item.name)}${item.is_active ? '' : ' · ' + tr('admin.active_no')}</td>
+            <td>${item.scheduled_days}</td>
+            <td>${item.working_days}</td>
+            <td>${item.total_hours}h</td>
+            <td>${item.late_count}</td>
+            <td>${item.early_count}</td>
+            <td>${item.absent_count}</td>
+            <td>${item.leave_count}</td>
+            <td>${item.partial_count}</td>
+        </tr>
+    `).join('');
+}
+
 function renderSummary(data) {
     const el = document.getElementById('stats-summary');
+    if (data.error || data.ok === false) { el.innerHTML = ''; return; }
     el.innerHTML = `
         <div class="summary-card">
             <div class="summary-item"><span class="summary-label">${tr('stats.attendance_schedule')}</span><span class="summary-value">${data.working_days} / ${data.scheduled_days || data.working_days}</span></div>
@@ -146,7 +216,7 @@ function renderSummary(data) {
 function renderTable(data) {
     const tbody = document.getElementById('stats-body');
     if (data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">{{ _('stats.no_data') }}</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-msg">{{ _('stats.no_data') }}</td></tr>';
         return;
     }
 
@@ -158,8 +228,11 @@ function renderTable(data) {
         'absent': '{{ _('stats.absent') }}',
         'partial': '{{ _('stats.partial') }}',
         'leave': tr('stats.leave'),
+        'working': tr('status.working'),
+        'pending': tr('status.pending'),
     };
     const statusColors = {
+        'working': 'status-ok',
         'normal': 'status-ok',
         'late': 'status-warn',
         'early_leave': 'status-warn',
@@ -169,14 +242,21 @@ function renderTable(data) {
     };
 
     tbody.innerHTML = data.map(r => `
-        <tr>
+        <tr style="cursor:pointer" title="${tr('dashboard.fix')}">
             <td>${r.date}</td>
+            <td>${escapeHtml(r.name)}</td>
             <td>${r.check_in || '-'}</td>
             <td>${r.check_out || '-'}</td>
             <td><span class="status-badge ${statusColors[r.status] || ''}">${statusLabels[r.status] || r.status}</span></td>
             <td>${r.working_hours != null ? r.working_hours + 'h' : '-'}</td>
         </tr>
     `).join('');
+    // 点一行直接去补卡 / 修改这一天。
+    [...tbody.rows].forEach((row, index) => {
+        row.onclick = () => {
+            location.href = '/admin/attendance?employee=' + encodeURIComponent(data[index].employee_id) + '&date=' + data[index].date;
+        };
+    });
 }
 
 function renderChart(data) {
@@ -188,6 +268,8 @@ function renderChart(data) {
         'absent': '{{ _('stats.absent') }}',
         'partial': '{{ _('stats.partial') }}',
         'leave': tr('stats.leave'),
+        'working': tr('status.working'),
+        'pending': tr('status.pending'),
     };
 
     // Hours chart
@@ -256,7 +338,7 @@ function renderChart(data) {
     });
 }
 
-function exportCSV() {
+function exportCSV(kind) {
     const range = getDateRange();
     const employeeId = document.getElementById('stats-employee').value;
 
@@ -267,17 +349,19 @@ function exportCSV() {
             employee_id: employeeId || null,
             start_date: range.start_date,
             end_date: range.end_date,
+            kind: kind,
         }),
     })
-    .then(r => r.blob())
+    .then(r => { if (!r.ok) throw new Error('export'); return r.blob(); })
     .then(blob => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'attendance.csv';
+        a.download = (kind === 'summary' ? 'attendance_summary_' : 'attendance_') + range.start_date + '_' + range.end_date + '.csv';
         a.click();
         URL.revokeObjectURL(url);
-    });
+    })
+    .catch(() => alert(tr('stats.bad_range')));
 }
 </script>
 {% endblock %}

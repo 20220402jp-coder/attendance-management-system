@@ -11,7 +11,7 @@ const locale =
       in: '签到上班',
       out: '签退下班',
       done: '今日已完成',
-      off: '今日休息 / 未安排班次',
+      off: '今日未排班，可照常打卡',
       loading: '读取中…',
       pending: '正在确认打卡，请稍候…',
       unknown: '连接中断，正在核实结果，请勿重复提交。',
@@ -32,7 +32,7 @@ const locale =
       in: 'Check in',
       out: 'Check out',
       done: 'Completed today',
-      off: 'Day off / No shift',
+      off: 'No shift today. You can still clock in.',
       loading: 'Loading…',
       pending: 'Confirming attendance…',
       unknown: 'Connection lost. Checking the result; do not submit again.',
@@ -53,7 +53,7 @@ const locale =
       in: '出勤',
       out: '退勤',
       done: '本日の打刻完了',
-      off: '休日 / シフト未設定',
+      off: '本日はシフトなし（打刻は可能です）',
       loading: '読み込み中…',
       pending: '打刻を確認しています…',
       unknown: '接続が切れました。結果を確認中です。再送信しないでください。',
@@ -132,23 +132,21 @@ function setLabel(text) {
 function render() {
   const s = state;
   button.style.display = 'block';
-  button.disabled = phase !== 'idle' || !s || s.is_off || !!s.check_out;
+  button.disabled = phase !== 'idle' || !s || !!s.check_out;
   select.disabled = ['submitting', 'unknown', 'success', 'switching'].includes(phase);
-  setLabel(
-    !s ? locale.choose : s.is_off ? locale.off : s.check_out ? locale.done : s.check_in ? locale.out : locale.in,
-  );
+  setLabel(!s ? locale.choose : s.check_out ? locale.done : s.check_in ? locale.out : locale.in);
   if (phase === 'loading') setLabel(locale.loading);
   if (['submitting', 'unknown'].includes(phase)) setLabel(locale.pending);
   if (!['classic', 'original'].includes(boot.theme)) {
     $('#avatar').textContent = s?.name?.[0] || '·';
     $('#schedule-text').textContent = s?.schedule ? `${s.schedule.start} — ${s.schedule.end}` : '—';
     $('#status').textContent = s
-      ? s.is_off
-        ? locale.off
-        : s.check_out
-          ? locale.done
-          : s.check_in
-            ? locale.inLabel + ' ✓'
+      ? s.check_out
+        ? locale.done
+        : s.check_in
+          ? locale.inLabel + ' ✓'
+          : s.is_off
+            ? locale.off
             : '—'
       : '—';
   } else {
@@ -158,11 +156,11 @@ function render() {
     chip.className = 'schedule-chip';
     chip.textContent = s?.schedule ? `${s.schedule.start} — ${s.schedule.end}` : '';
     chip.style.display = s?.schedule ? 'inline-flex' : 'none';
-    $('#off-day').style.display = s?.is_off ? 'block' : 'none';
+    $('#off-day').style.display = s?.is_off && !s.check_in ? 'block' : 'none';
     $('#off-day .off-day-text').textContent = locale.off;
     const line = $('#status-line');
     line.replaceChildren();
-    line.style.display = s && !s.is_off ? 'block' : 'none';
+    line.style.display = s && (!s.is_off || s.check_in) ? 'block' : 'none';
     if (s)
       for (const [label, time] of [
         [locale.inLabel, s.check_in],
@@ -279,13 +277,10 @@ async function pollTicket() {
   }
 }
 async function check() {
-  if (phase !== 'idle' || !state || state.is_off || state.check_out) return;
+  if (phase !== 'idle' || !state || state.check_out) return;
   const action = state.check_in ? 'check_out' : 'check_in';
-  if (action === 'check_out' && state.schedule) {
-    const now = new Date(),
-      end = state.schedule.end.split(':').map(Number);
-    if (now.getHours() * 60 + now.getMinutes() < end[0] * 60 + end[1] && !confirm(locale.early)) return;
-  }
+  if (action === 'check_out' && state.schedule?.end_ts && Date.now() < state.schedule.end_ts && !confirm(locale.early))
+    return;
   phase = 'submitting';
   say(locale.pending);
   render();

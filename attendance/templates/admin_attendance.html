@@ -107,7 +107,7 @@
             <select id="sel-emp">
                 <option value="">— {{ _('attendance.select') }} —</option>
                 {% for emp in employees %}
-                <option value="{{ emp.employee_id }}">{{ emp.name }} · {{ emp.department }}</option>
+                <option value="{{ emp.employee_id }}">{{ emp.name }}{% if emp.department %} · {{ emp.department }}{% endif %}{% if not emp.is_active %} · {{ _('admin.active_no') }}{% endif %}</option>
                 {% endfor %}
             </select>
         </div>
@@ -228,6 +228,8 @@ function onFieldChange() {
                 'both': tr('status.both') + ' ❌',
                 'absent': tr('status.absent') + ' ❌',
                 'partial': tr('status.partial') + ' ⚠️',
+                'working': tr('status.working'),
+                'pending': tr('status.pending'),
                 'leave': tr('stats.leave') + ' 🛌',
             };
             const st = statusLabels[rec.status] || '—';
@@ -293,5 +295,14 @@ function doSave() {
         saveBtn.disabled = false;
     });
 }
+
+// 从后台首页或统计表点「补卡」进来时，自动选好员工和日期并查询。
+(function () {
+    const params = new URLSearchParams(location.search);
+    const employee = params.get('employee'), date = params.get('date');
+    if (employee) document.getElementById('sel-emp').value = employee;
+    if (date) document.getElementById('sel-date').value = date;
+    if (employee && date) onFieldChange();
+})();
 </script>
 {% endblock %}
