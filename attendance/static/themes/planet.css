@@ -1,0 +1,82 @@
+/* Style 12 · Tiny Planet */
+*{box-sizing:border-box}
+html,body{margin:0}
+body{min-height:100vh;display:flex;flex-direction:column;color:#eef3ff;font:14px/1.5 -apple-system,BlinkMacSystemFont,'Noto Sans SC','Noto Sans JP','Segoe UI',sans-serif;
+  background:var(--sky,#0f1b3d);transition:background 2s ease;--card:#0d1633cc;--line:#ffffff22;--muted:#b7c3e6}
+body[data-daypart=dawn]{--sky:radial-gradient(ellipse at 30% 20%,#ffb38a55,transparent 55%),linear-gradient(170deg,#2b2f6b,#16204a 60%,#0d1534)}
+body[data-daypart=day]{--sky:radial-gradient(ellipse at 25% 30%,#5fb8ff40,transparent 55%),linear-gradient(170deg,#1e3f86,#142a5e 60%,#0d1a40)}
+body[data-daypart=dusk]{--sky:radial-gradient(ellipse at 30% 25%,#ff8f6b45,transparent 55%),linear-gradient(170deg,#3a2a6a,#1e1f50 60%,#10133a)}
+body[data-daypart=night]{--sky:radial-gradient(ellipse at 30% 25%,#5a4bd033,transparent 55%),linear-gradient(170deg,#0d1236,#0a0f2b 60%,#060a1d)}
+body{background:var(--sky)}
+button,select{font:inherit}
+button,a,select{touch-action:manipulation}
+a{color:inherit}
+button:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:4px}
+
+/* 3D canvas fills the screen behind everything */
+.planet-scene{position:fixed;inset:0;z-index:0}
+.planet-scene canvas{display:block;width:100%!important;height:100%!important}
+
+/* CSS planet shown while 3D loads, or if WebGL is unavailable */
+.planet-fallback{position:fixed;z-index:0;pointer-events:none;left:calc((100vw - min(420px,42vw))/2);top:50vh;transform:translate(-50%,-50%);width:min(44vh,34vw);aspect-ratio:1;transition:opacity .6s}
+.planet-fallback span{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 34% 30%,#bdf0c2,#5cb977 30%,#2e8bc0 58%,#163f78 80%);box-shadow:0 0 60px #7bdff255,inset -18px -22px 40px #0006;animation:fallbackSpin 18s linear infinite}
+@keyframes fallbackSpin{to{filter:hue-rotate(20deg)}}
+.has-3d .planet-fallback{opacity:0}
+
+.planet-header,.planet-main,.planet-footer{position:relative;z-index:1}
+.planet-header{width:min(1080px,92%);margin:26px auto 0;display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:13px;letter-spacing:2px}
+.planet-brand{color:var(--accent);white-space:nowrap}
+.planet-links{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:flex-end;font-size:12px}
+.planet-links a{text-decoration:none;opacity:.8}
+.planet-links a:hover{opacity:1}
+.planet-langs{display:inline-flex;gap:4px;padding-left:12px;border-left:1px solid var(--line)}
+.planet-langs a{padding:3px 7px;border-radius:6px;letter-spacing:0}
+.planet-langs a[aria-current]{background:#ffffff1f;opacity:1}
+
+.planet-main{flex:1;width:min(1080px,92%);margin:0 auto;display:grid;grid-template-columns:1fr min(400px,40vw);align-items:center;gap:28px;padding:24px 0}
+.planet-main{pointer-events:none}.planet-card{pointer-events:auto}
+.planet-stage{align-self:stretch;display:flex;align-items:flex-end;min-height:440px;pointer-events:none}
+.planet-time{pointer-events:auto;text-shadow:0 2px 18px #0008}
+.planet-kicker{font-size:10px;letter-spacing:4px;margin:0 0 6px;color:var(--accent);opacity:.85}
+.planet-time time{font-size:clamp(48px,7vw,78px);font-weight:300;letter-spacing:-2px;line-height:1;font-variant-numeric:tabular-nums}
+#clock-seconds{font-size:22px;opacity:.55;margin-left:8px;font-variant-numeric:tabular-nums}
+#date{margin:10px 0 0;font-size:13px;color:var(--muted)}
+.planet-daypart{margin:8px 0 0;font-size:12px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap}
+#daypart{color:var(--accent)}
+#daypart:empty{display:none}
+.planet-hint{opacity:.7}
+.planet-hint::before{content:'⟲ ';opacity:.8}
+
+/* glass card */
+.planet-card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:30px 26px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 30px 80px #0007,inset 0 1px 0 #ffffff1c;animation:cardIn .8s cubic-bezier(.2,.8,.2,1) both}
+@keyframes cardIn{from{opacity:0;transform:translateY(24px) scale(.97)}}
+.card-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:22px}
+.card-heading h1{font-size:18px;font-weight:600;letter-spacing:3px;margin:0}
+.card-heading span{font-size:11px;color:var(--muted);text-align:right}
+.planet-card label{display:block;font-size:11px;color:var(--muted);margin-bottom:8px;letter-spacing:1px}
+.employee-picker{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#ffffff0d;min-height:52px}
+#avatar{width:34px;height:34px;flex-shrink:0;display:grid;place-items:center;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffe7a3,var(--accent) 55%,#c98a12);color:#3a2700;font-weight:700;box-shadow:0 0 18px #ffd16655}
+.employee-picker select{width:100%;border:0;background:transparent;color:inherit;padding:4px}
+.empty{font-size:12px;color:var(--muted)}
+.shift{display:flex;justify-content:space-between;align-items:center;margin:18px 0 22px;padding:12px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);font-size:12px;color:var(--muted)}
+.shift strong{color:#fff;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:1px}
+#clock-btn{position:relative;overflow:hidden;width:100%;display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border:0;border-radius:14px;cursor:pointer;font-size:15px;font-weight:600;letter-spacing:2px;color:#2a1d00;background:linear-gradient(120deg,#ffe08a,var(--accent) 45%,#ffb347);box-shadow:0 10px 30px #ffd16640;transition:transform .2s,box-shadow .2s}
+#clock-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 14px 36px #ffd16666}
+#clock-btn:active:not(:disabled){transform:scale(.98)}
+#clock-btn:not(:disabled)::after{content:'';position:absolute;top:0;bottom:0;left:-40%;width:30%;background:linear-gradient(100deg,transparent,#fff8,transparent);transform:skewX(-20deg);animation:shine 3.4s ease-in-out infinite}
+@keyframes shine{0%,60%{left:-40%}100%{left:130%}}
+#clock-btn:disabled{cursor:default;color:#9aa6c8;background:#ffffff14;box-shadow:none}
+#clock-result{min-height:22px;margin:12px 0 0;text-align:center;font-size:12px;color:var(--muted)}
+.planet-footer{text-align:center;font-size:10px;letter-spacing:3px;color:#ffffff55;padding:18px}
+
+/* phones and narrow windows: planet on top, card below */
+@media(max-width:819px){
+  .planet-main{grid-template-columns:1fr;gap:16px;padding-top:0}
+  .planet-stage{min-height:calc(min(48vh, 400px) - 40px)}
+  .planet-time time{font-size:52px}
+  .planet-fallback{left:50vw;top:min(24vh,200px);width:min(60vw,34vh)}
+  .planet-header{margin-top:16px}
+  .planet-hint{display:none}
+}
+@media(max-width:420px){.planet-links{gap:8px}.planet-langs{padding-left:8px}.planet-card{padding:24px 18px}}
+@media(prefers-reduced-motion:reduce){.planet-card,#clock-btn::after,.planet-fallback span{animation:none!important}}

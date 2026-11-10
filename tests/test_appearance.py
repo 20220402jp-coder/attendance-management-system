@@ -84,7 +84,7 @@ def test_all_designs_preview_apply_and_feedback(tmp_path, monkeypatch):
     eid=client.post('/api/employee',json={'employee_id':'VIEW','name':'View'}).json['id']
     authorize_clock(client,eid)
     headers = admin_headers(client)
-    assert len(module.CLOCK_THEMES) == 11
+    assert len(module.CLOCK_THEMES) == 12
     revision = 0
     for theme in module.CLOCK_THEMES:
         preview = client.get('/admin/appearance/preview/' + theme)

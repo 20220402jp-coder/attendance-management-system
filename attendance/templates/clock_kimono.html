@@ -1,3 +1,66 @@
-<!doctype html><html lang="{{ current_lang }}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ _('app.title') }}</title><link rel="stylesheet" href="/static/themes/kimono.css?v=1"></head><body>
-<main><div class="top"><span>✿ &nbsp; {{ _('nav.clock') }}</span><a href="/schedule/" style="color:inherit;font-size:12px">{{ _('nav.preferences') }}</a></div><section class="card"><div class="character"><div class="halo"></div><div id="scene" role="img" aria-label="{{ _('clock.character') }}"><p class="loading">…</p></div><button id="preview-bow" aria-label="{{ _('clock.preview_bow') }}">♡</button></div><div class="controls"><div class="clock"><time id="clock-time">--:--</time><span id="clock-seconds"></span></div><p id="date" class="date"></p><label for="employee-select">{{ _('stats.employee') }}</label><div class="employee-picker"><span id="avatar">·</span>{% include 'clock_identity_picker.html' %}</div>{% if not employees %}<p class="note">{{ _('home.no_employees') }} <a href="/admin/employees">{{ _('home.add_employee') }}</a></p>{% endif %}<div class="shift"><span id="schedule-text">—</span><span id="status">—</span></div><button id="clock-btn" class="primary" disabled><span>…</span><span>→</span></button><p id="clock-result" role="status" aria-live="polite" style="font-size:12px;min-height:20px;text-align:center"></p></div></section><p class="note">{% for code,label in langs %}<a href="?lang={{ code }}" style="color:inherit;margin:0 6px">{{ label }}</a>{% endfor %}</p></main>
-<dialog id="success" aria-labelledby="success-title"><button id="close-modal" aria-label="{{ _('clock.close') }}">×</button><div id="modal-scene"></div><h2 id="success-title"></h2><p id="success-detail"></p><p class="thanks"></p><button id="continue" class="primary">OK <span>♡</span></button><button id="replay">↻</button></dialog><script id="clock-boot" type="application/json">{{ clock_boot|tojson }}</script><script type="module" src="/static/themes/clock.js?v=2"></script></body></html>
+<!doctype html>
+<html lang="{{ current_lang }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ _('app.title') }} · {{ design.name }}</title>
+<link rel="stylesheet" href="/static/themes/kimono.css?v=2">
+</head>
+<body>
+<div class="petals" aria-hidden="true">{% for i in range(14) %}<i style="--i:{{ i }}"></i>{% endfor %}</div>
+<svg class="branch" viewBox="0 0 320 200" aria-hidden="true">
+  <path d="M-10 30 C60 40 110 70 160 60 C200 52 230 70 270 100" stroke="#8c5a52" stroke-width="7" fill="none" stroke-linecap="round"/>
+  <path d="M120 64 C130 90 150 100 170 110 M200 58 C215 40 235 34 252 36" stroke="#8c5a52" stroke-width="4" fill="none" stroke-linecap="round"/>
+  {% for x,y,r in [(40,32,13),(92,52,11),(150,58,14),(176,112,10),(250,36,12),(272,98,11),(214,64,8),(126,88,8)] %}
+  <g transform="translate({{ x }} {{ y }})">{% for a in range(0,360,72) %}<ellipse rx="{{ r*0.48 }}" ry="{{ r*0.62 }}" cy="-{{ r*0.6 }}" transform="rotate({{ a }})" fill="{{ '#ffd6e2' if loop.index is odd else '#ffc1d3' }}"/>{% endfor %}<circle r="{{ r*0.22 }}" fill="#f2b544"/></g>
+  {% endfor %}
+</svg>
+
+<main>
+  <header class="top">
+    <span class="brand">✿ {{ design.name }}</span>
+    <nav>
+      <a href="/schedule/?lang={{ current_lang }}">{{ _('nav.preferences') }} ↗</a>
+      <span class="langs">{% for code,label in langs %}<a href="?lang={{ code }}"{% if code == current_lang %} aria-current="true"{% endif %}>{{ label }}</a>{% endfor %}</span>
+    </nav>
+  </header>
+
+  <section class="card">
+    <div class="stage">
+      <div class="window" aria-hidden="true">
+        <span class="sun"></span>
+        <span class="cloud c1"></span><span class="cloud c2"></span>
+        <span class="waves"></span>
+      </div>
+      <div id="scene" role="img" aria-label="{{ _('clock.character') }}"><p class="loading">✿</p></div>
+      <button id="preview-bow" type="button" aria-label="{{ _('clock.preview_bow') }}" title="{{ _('clock.preview_bow') }}">♡</button>
+    </div>
+
+    <div class="controls">
+      <p class="kicker">{{ design.label }}</p>
+      <div class="clock"><time id="clock-time">--:--</time><span id="clock-seconds"></span></div>
+      <p id="date" class="date"></p>
+      <label for="employee-select">{{ _('stats.employee') }}</label>
+      <div class="employee-picker"><span id="avatar">·</span>{% include 'clock_identity_picker.html' %}</div>
+      {% if not employees %}<p class="note">{{ _('home.no_employees') }} <a href="/admin/employees">{{ _('home.add_employee') }}</a></p>{% endif %}
+      <div class="shift"><span>{{ _('admin.schedule') }}</span><strong id="schedule-text">—</strong><span id="status">—</span></div>
+      <button id="clock-btn" class="primary" disabled><span>…</span><span aria-hidden="true">✿</span></button>
+      <p id="clock-result" role="status" aria-live="polite"></p>
+    </div>
+  </section>
+  <p class="foot">{{ design.label }} · {{ _('app.title') }}</p>
+</main>
+
+<dialog id="success" aria-labelledby="success-title">
+  <button id="close-modal" aria-label="{{ _('clock.close') }}">×</button>
+  <div id="modal-scene"></div>
+  <h2 id="success-title"></h2>
+  <p id="success-detail"></p>
+  <p class="thanks"></p>
+  <button id="continue" class="primary">OK <span aria-hidden="true">♡</span></button>
+  <button id="replay" aria-label="{{ _('appearance.replay') }}">↻</button>
+</dialog>
+<script id="clock-boot" type="application/json">{{ clock_boot|tojson }}</script>
+<script type="module" src="/static/themes/clock.js?v=4"></script>
+</body>
+</html>
