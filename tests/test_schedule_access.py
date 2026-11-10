@@ -16,7 +16,7 @@ def login(c, code):
 
 def test_own_only_and_save_revokes_session(tmp_path, monkeypatch):
     app,c,ids,code = setup_access(tmp_path,monkeypatch)
-    assert len(code)==3 and code.isdigit()
+    assert len(code)==4 and code.isdigit()
     assert c.get('/api/schedule/preferences/A').status_code==401
     h={'X-Schedule-Token':login(c,code).json['token']}
     assert c.get('/api/schedule/preferences/A',headers=h).json['ok']
@@ -50,8 +50,8 @@ def test_lockout_persists_across_clients_and_reset_revokes(tmp_path,monkeypatch)
 def test_expiry_inactive_and_leading_zero(tmp_path,monkeypatch):
     app,c,ids,code=setup_access(tmp_path,monkeypatch)
     monkeypatch.setattr(app.secrets,'randbelow',lambda _:7)
-    code=c.post(f'/api/employee/{ids[0]}/schedule-code',json={}).json['code'] if code!='007' else code
-    assert code=='007'
+    code=c.post(f'/api/employee/{ids[0]}/schedule-code',json={}).json['code']
+    assert len(code)==4 and code.startswith('000')
     h={'X-Schedule-Token':login(c,code).json['token']}
     m=importlib.import_module('models')
     with app.app.app_context():

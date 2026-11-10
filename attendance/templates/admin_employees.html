@@ -1,4 +1,16 @@
 {% extends "base.html" %}
+{% block head %}
+<style>
+[hidden] { display: none !important; }
+.emp-inactive td { color: var(--text-secondary); }
+.week-row { display: grid; grid-template-columns: 90px 1fr 1fr; gap: 10px; align-items: center; padding: 6px 0; }
+.week-row label { display: flex; align-items: center; gap: 8px; font-weight: 600; cursor: pointer; }
+.week-row input[type="checkbox"] { width: 18px; height: 18px; }
+.week-row input[type="time"] { padding: 8px; border: 2px solid var(--border); border-radius: 8px; font: inherit; }
+.week-row input[type="time"]:disabled { opacity: 0.4; }
+.form-hint { color: var(--text-secondary); font-size: 0.8rem; }
+</style>
+{% endblock %}
 {% block content %}
 <div class="admin-page">
     <h1>{{ _('admin.title') }}</h1>
@@ -9,12 +21,8 @@
         <h3 id="form-title">{{ _('admin.add_employee') }}</h3>
         <input type="hidden" id="edit-id" value="">
         <div class="form-row">
-            <label>{{ _('admin.employee_id') }}</label>
-            <input type="text" id="form-eid" required>
-        </div>
-        <div class="form-row">
-            <label>{{ _('admin.name') }}</label>
-            <input type="text" id="form-name" required>
+            <label for="form-name">{{ _('admin.name') }}</label>
+            <input type="text" id="form-name" maxlength="100" required>
         </div>
         <div class="form-row">
             <label for="form-employment">{{ _('admin.employment_type') }}</label>
@@ -24,19 +32,15 @@
             </select>
         </div>
         <div class="form-row">
-            <label for="form-dept">{{ _('admin.department') }}</label>
+            <label for="form-dept">{{ _('admin.department_optional') }}</label>
             <input type="text" id="form-dept" maxlength="100">
         </div>
-        <div class="form-row">
-            <label>{{ _('admin.lang') }}</label>
-            <select id="form-lang">
-                <option value="zh">中文</option>
-                <option value="en">English</option>
-                <option value="ja">日本語</option>
-            </select>
+        <div class="form-row" id="form-eid-row">
+            <label for="form-eid">{{ _('admin.employee_id_optional') }}</label>
+            <input type="text" id="form-eid" maxlength="20" placeholder="{{ _('admin.id_auto_hint') }}">
         </div>
         <div class="form-actions">
-            <button class="btn btn-primary" onclick="saveEmployee()">{{ _('admin.save') }}</button>
+            <button class="btn btn-primary" id="save-employee" onclick="saveEmployee()">{{ _('admin.save') }}</button>
             <button class="btn btn-cancel" onclick="hideForm()">{{ _('admin.cancel') }}</button>
         </div>
     </div>
@@ -46,28 +50,32 @@
         <table class="table">
             <thead>
                 <tr>
-                    <th>{{ _('admin.employee_id') }}</th>
                     <th>{{ _('admin.name') }}</th>
-                    <th>{{ _('admin.employment_type') }}</th><th>{{ _('admin.department') }}</th>
-                    <th>{{ _('admin.lang') }}</th>
-                    <th>{{ _('admin.active') }}</th>
-                    <th>{{ _('admin.schedule') }}</th>
+                    <th>{{ _('admin.employment_type') }}</th>
+                    <th>{{ _('admin.department') }}</th>
+                    <th>{{ _('admin.employee_id') }}</th>
+                    <th>{{ _('admin.status') }}</th>
                     <th></th>
                 </tr>
             </thead>
             <tbody>
                 {% for emp in employees %}
-                <tr>
-                    <td>{{ emp.employee_id }}</td>
+                <tr class="{{ '' if emp.is_active else 'emp-inactive' }}">
                     <td>{{ emp.name }}</td>
-                    <td>{{ _('admin.regular_employee') if emp.employment_type == 'regular' else _('admin.parttime') }}</td><td>{{ emp.department }}</td>
-                    <td>{{ emp.lang }}</td>
-                    <td>{{ '✅' if emp.is_active else '❌' }}</td>
-                    <td><button class="btn btn-sm" onclick="editSchedule({{ emp.id }}, '{{ emp.employee_id }}')">📅 {{ _('admin.schedule') }}</button></td>
+                    <td>{{ _('admin.regular_employee') if emp.employment_type == 'regular' else _('admin.parttime') }}</td>
+                    <td>{{ emp.department }}</td>
+                    <td>{{ emp.employee_id }}</td>
+                    <td>{{ _('admin.active_yes') if emp.is_active else _('admin.active_no') }}</td>
                     <td>
-                        <button class="btn btn-sm" onclick='editEmployee({{ emp.id|tojson }}, {{ emp.employee_id|tojson }}, {{ emp.name|tojson }}, {{ emp.department|tojson }}, {{ emp.lang|tojson }}, {{ emp.employment_type|tojson }})'>✏️</button>
-                        <button class="btn btn-sm" onclick='issueCode({{ emp.id|tojson }}, {{ emp.name|tojson }})'>{{ _('access.code_action') }}</button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteEmployee({{ emp.id }})">🗑️</button>
+                        <button class="btn btn-sm" onclick='editEmployee({{ emp.id|tojson }}, {{ emp.employee_id|tojson }}, {{ emp.name|tojson }}, {{ emp.department|tojson }}, {{ emp.employment_type|tojson }})'>✏️ {{ _('admin.edit') }}</button>
+                        {% if emp.is_active %}
+                        <button class="btn btn-sm" onclick='editSchedule({{ emp.id|tojson }}, {{ emp.name|tojson }})'>📅 {{ _('admin.weekly') }}</button>
+                        <button class="btn btn-sm" onclick='issueCode({{ emp.id|tojson }}, {{ emp.name|tojson }})'>🔑 {{ _('access.code_action') }}</button>
+                        <button class="btn btn-sm" onclick='setActive({{ emp.id|tojson }}, false)'>{{ _('admin.deactivate') }}</button>
+                        {% else %}
+                        <button class="btn btn-sm" onclick='setActive({{ emp.id|tojson }}, true)'>{{ _('admin.reactivate') }}</button>
+                        <button class="btn btn-sm btn-danger" onclick='deleteEmployee({{ emp.id|tojson }})'>🗑️ {{ _('admin.delete') }}</button>
+                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}
@@ -79,14 +87,18 @@
     </div>
 </div>
 
-<!-- Schedule Modal: clickable month calendar -->
+<!-- 每周固定班次 -->
 <div id="schedule-modal" class="modal" style="display:none;">
-    <div class="modal-content" style="max-width:750px;">
+    <div class="modal-content" style="max-width:460px;">
         <span class="modal-close" onclick="closeSchedule()">&times;</span>
-        <h3 id="schedule-modal-title">📅 {{ _('admin.schedule') }}</h3>
-        <input type="hidden" id="schedule-emp-id" value="">
-        <input type="hidden" id="schedule-emp-eid" value="">
-        <div id="schedule-month-view" style="min-height:200px;text-align:center;padding:12px;color:var(--text-secondary);">{{ _('admin.loading') }}</div>
+        <h3 id="schedule-modal-title">📅 {{ _('admin.weekly') }}</h3>
+        <p class="form-hint">{{ _('admin.weekly_hint') }}</p>
+        <div id="week-rows"></div>
+        <p id="week-msg" class="form-hint" role="status"></p>
+        <div class="form-actions">
+            <button class="btn btn-primary" onclick="saveSchedule()">{{ _('admin.save') }}</button>
+            <button class="btn btn-cancel" onclick="closeSchedule()">{{ _('admin.cancel') }}</button>
+        </div>
     </div>
 </div>
 
@@ -100,223 +112,188 @@
 <p>{{ _('access.code_note') }}</p><button class="btn btn-primary" onclick="document.getElementById('code-dialog').close()">{{ _('access.close') }}</button>
 </dialog>
 <script>
-document.getElementById('code-dialog').addEventListener('close',()=>{document.getElementById('issued-code').textContent='';});
-let issuingCode=false;
-let pendingCodeEmployee=null;
-function issueCode(id,name){
-    pendingCodeEmployee={id,name};
-    document.getElementById('reset-code-name').textContent=name;
+const DEFAULT_START = {{ rules.work_start|tojson }}, DEFAULT_END = {{ rules.work_end|tojson }};
+let reloadAfterCode = false;
+document.getElementById('code-dialog').addEventListener('close', () => {
+    document.getElementById('issued-code').textContent = '';
+    if (reloadAfterCode) location.reload();
+});
+
+function showCode(name, code) {
+    document.getElementById('issued-name').textContent = name;
+    document.getElementById('issued-code').textContent = code;
+    document.getElementById('code-dialog').showModal();
+}
+
+let issuingCode = false;
+let pendingCodeEmployee = null;
+function issueCode(id, name) {
+    pendingCodeEmployee = {id, name};
+    document.getElementById('reset-code-name').textContent = name;
     document.getElementById('reset-code-dialog').showModal();
 }
-async function confirmIssueCode(){
-    if(issuingCode || !pendingCodeEmployee)return;
-    const {id,name}=pendingCodeEmployee;
+async function confirmIssueCode() {
+    if (issuingCode || !pendingCodeEmployee) return;
+    const {id, name} = pendingCodeEmployee;
     document.getElementById('reset-code-dialog').close();
-    issuingCode=true;
-    try{
-        const r=await fetch('/api/employee/'+id+'/schedule-code',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
-        const data=await r.json();if(!r.ok || !data.ok)throw new Error(data.msg || tr('access.failed'));
-        document.getElementById('issued-name').textContent=name;
-        document.getElementById('issued-code').textContent=data.code;
-        document.getElementById('code-dialog').showModal();
-    }catch(error){alert(error.message);}finally{issuingCode=false;}
+    issuingCode = true;
+    try {
+        const r = await fetch('/api/employee/' + id + '/schedule-code', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}'});
+        const data = await r.json();
+        if (!r.ok || !data.ok) throw new Error(data.msg || tr('access.failed'));
+        showCode(name, data.code);
+    } catch (error) { alert(error.message); } finally { issuingCode = false; }
 }
 
-let editingId = null;
-
 function showAddForm() {
-    editingId = null;
     document.getElementById('edit-id').value = '';
     document.getElementById('form-eid').value = '';
+    document.getElementById('form-eid-row').hidden = false;
     document.getElementById('form-name').value = '';
     document.getElementById('form-dept').value = '';
     document.getElementById('form-employment').value = 'regular';
-    document.getElementById('form-lang').value = 'zh';
-    document.getElementById('form-title').textContent = '{{ _('admin.add_employee') }}';
+    document.getElementById('form-title').textContent = tr('admin.add_employee');
     document.getElementById('employee-form').style.display = 'block';
+    document.getElementById('form-name').focus();
 }
 
 function hideForm() {
     document.getElementById('employee-form').style.display = 'none';
 }
 
-function editEmployee(id, eid, name, dept, lang, employmentType) {
-    editingId = id;
+function editEmployee(id, eid, name, dept, employmentType) {
     document.getElementById('edit-id').value = id;
-    document.getElementById('form-eid').value = eid;
+    // 工号建好后不再修改，避免和已有记录对不上。
+    document.getElementById('form-eid-row').hidden = true;
     document.getElementById('form-name').value = name;
     document.getElementById('form-dept').value = dept || '';
     document.getElementById('form-employment').value = employmentType;
-    document.getElementById('form-lang').value = lang || 'zh';
-    document.getElementById('form-title').textContent = '{{ _('admin.edit_employee') }}';
+    document.getElementById('form-title').textContent = tr('admin.edit_employee');
     document.getElementById('employee-form').style.display = 'block';
 }
 
-function saveEmployee() {
-    const eid = document.getElementById('form-eid').value.trim();
+async function saveEmployee() {
     const name = document.getElementById('form-name').value.trim();
-    if (!eid || !name) { alert(tr('admin.required')); return; }
-
+    if (!name) { alert(tr('admin.name_required')); return; }
     const id = document.getElementById('edit-id').value;
-    const url = id ? '/api/employee/' + id : '/api/employee';
-    const method = id ? 'PUT' : 'POST';
-
-    fetch(url, {
-        method: method,
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            employee_id: eid,
-            name: name,
-            department: document.getElementById('form-dept').value.trim(),
-            employment_type: document.getElementById('form-employment').value,
-            lang: document.getElementById('form-lang').value,
-        })
-    }).then(r => r.json()).then(data => {
-        if (data.ok) location.reload();
-        else alert(data.msg || tr('admin.save_failed'));
-    }).catch(() => alert(tr('admin.save_failed')));
+    const body = {
+        name: name,
+        department: document.getElementById('form-dept').value.trim(),
+        employment_type: document.getElementById('form-employment').value,
+    };
+    if (!id) body.employee_id = document.getElementById('form-eid').value.trim();
+    const button = document.getElementById('save-employee');
+    button.disabled = true;
+    try {
+        const r = await fetch(id ? '/api/employee/' + id : '/api/employee', {
+            method: id ? 'PUT' : 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(body),
+        });
+        const data = await r.json();
+        if (!r.ok || !data.ok) throw new Error(data.msg || tr('admin.save_failed'));
+        if (!id && data.code) {
+            // 新员工的个人码随建档自动生成，直接显示给管理员。
+            hideForm();
+            reloadAfterCode = true;
+            showCode(name, data.code);
+        } else {
+            location.reload();
+        }
+    } catch (error) {
+        alert(error.message || tr('admin.save_failed'));
+    } finally {
+        button.disabled = false;
+    }
 }
 
-function deleteEmployee(id) {
+async function setActive(id, active) {
+    if (!active && !confirm(tr('admin.confirm_deactivate'))) return;
+    try {
+        const r = await fetch('/api/employee/' + id, {
+            method: 'PUT', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({is_active: active}),
+        });
+        const data = await r.json();
+        if (!r.ok || !data.ok) throw new Error(data.msg || tr('admin.save_failed'));
+        location.reload();
+    } catch (error) { alert(error.message || tr('admin.save_failed')); }
+}
+
+async function deleteEmployee(id) {
     if (!confirm(tr('admin.confirm_delete'))) return;
-    fetch('/api/employee/' + id, {method: 'DELETE'})
-        .then(async r => {
-            const data = await r.json();
-            if (data.ok) location.reload();
-            else alert(data.msg || tr('admin.delete_failed'));
-        })
-        .catch(() => alert(tr('admin.delete_failed')));
+    try {
+        const r = await fetch('/api/employee/' + id, {method: 'DELETE'});
+        const data = await r.json();
+        if (!r.ok || !data.ok) throw new Error(data.msg || tr('admin.delete_failed'));
+        location.reload();
+    } catch (error) { alert(error.message || tr('admin.delete_failed')); }
 }
 
-// Schedule: monthly view
-let schedSchedules = []; // per-day-of-week schedules
-let schedEditingDay = -1; // which day is being edited (-1 = none)
+// 每周固定班次：一行一天，勾选上班并填时间。
+let scheduleEmployee = null;
 
-function editSchedule(empDbId, empEid) {
-    document.getElementById('schedule-emp-id').value = empDbId;
-    document.getElementById('schedule-emp-eid').value = empEid;
+async function editSchedule(id, name) {
+    scheduleEmployee = id;
+    document.getElementById('schedule-modal-title').textContent = '📅 ' + name + ' · ' + tr('admin.weekly');
+    document.getElementById('week-msg').textContent = '';
+    const holder = document.getElementById('week-rows');
+    holder.textContent = tr('admin.loading');
     document.getElementById('schedule-modal').style.display = 'flex';
-    document.getElementById('schedule-month-view').innerHTML = '⏳ ' + tr('admin.loading');
-    schedEditingDay = -1;
-    
-    Promise.all([
-        fetch('/api/schedule/result').then(r => r.json()),
-        fetch('/api/employee/' + empDbId + '/schedules').then(r => r.json()),
-    ])
-    .then(([grid, scheds]) => {
-        schedSchedules = scheds;
-        if (!grid.ok || !grid.employees) throw new Error(tr('admin.no_schedule'));
-        const empGrid = grid.employees.find(e => e.employee_id === empEid);
-        if (!empGrid) throw new Error(tr('admin.no_schedule'));
-        renderMonthView(empGrid, grid);
-    })
-    .catch(err => {
-        console.error('editSchedule error:', err);
-        document.getElementById('schedule-month-view').innerHTML = 
-            '<p style="padding:40px;color:var(--text-secondary);">' + tr('admin.no_schedule') + '<br><small>' + tr('admin.generate_first') + '</small></p>';
+    let rows = [];
+    try {
+        rows = await (await fetch('/api/employee/' + id + '/schedules', {cache: 'no-store'})).json();
+    } catch (error) {
+        holder.textContent = tr('admin.save_failed');
+        return;
+    }
+    holder.replaceChildren();
+    for (let dow = 0; dow < 7; dow++) {
+        const saved = rows.find(item => item.day_of_week === dow);
+        const working = !!saved && !saved.is_off;
+        const row = document.createElement('div');
+        row.className = 'week-row';
+        const label = document.createElement('label');
+        const box = document.createElement('input');
+        box.type = 'checkbox';
+        box.checked = working;
+        box.dataset.dow = dow;
+        label.append(box, tr('admin.day_full_' + dow));
+        const start = document.createElement('input');
+        start.type = 'time';
+        start.value = saved ? saved.start_time : DEFAULT_START;
+        const end = document.createElement('input');
+        end.type = 'time';
+        end.value = saved ? saved.end_time : DEFAULT_END;
+        start.disabled = end.disabled = !working;
+        box.addEventListener('change', () => { start.disabled = end.disabled = !box.checked; });
+        row.append(label, start, end);
+        holder.append(row);
+    }
+}
+
+async function saveSchedule() {
+    const schedules = [...document.querySelectorAll('#week-rows .week-row')].map(row => {
+        const [box, start, end] = row.querySelectorAll('input');
+        return {
+            day_of_week: Number(box.dataset.dow),
+            start_time: start.value || DEFAULT_START,
+            end_time: end.value || DEFAULT_END,
+            is_off: !box.checked,
+        };
     });
-}
-
-function renderMonthView(empGrid, gridData) {
-    const empDays = empGrid.days;
-    const empName = empGrid.name;
-    
-    document.getElementById('schedule-modal-title').textContent = '📅 ' + empName + ' · ' + tr('admin.edit_schedule_title');
-    
-    const startParts = gridData.first_day.split('-').map(Number);
-    const start = new Date(startParts[0], startParts[1] - 1, startParts[2]);
-    const firstOfMonth = new Date(start.getFullYear(), start.getMonth(), 1);
-    let blanks = firstOfMonth.getDay() === 0 ? 6 : firstOfMonth.getDay() - 1;
-    const dim = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
-    
-    let html = '<div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:8px;">' + tr('admin.edit_schedule_hint') + '</div>';
-    html += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;">';
-    
-    for (const w of [0,1,2,3,4,5,6].map(i => tr('admin.day_' + i))) {
-        html += `<div style="text-align:center;font-size:0.75rem;color:var(--text-secondary);padding:4px 0;">${w}</div>`;
+    const message = document.getElementById('week-msg');
+    try {
+        const r = await fetch('/api/employee/' + scheduleEmployee + '/schedules', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({schedules}),
+        });
+        const data = await r.json();
+        if (!r.ok || !data.ok) throw new Error(data.msg || tr('admin.save_failed'));
+        closeSchedule();
+    } catch (error) {
+        message.textContent = '❌ ' + (error.message || tr('admin.save_failed'));
     }
-    for (let i = 0; i < blanks; i++) {
-        html += '<div></div>';
-    }
-    
-    // Build time map per day-of-week
-    const timeMap = {};
-    for (const s of schedSchedules) {
-        timeMap[s.day_of_week] = s.start_time + '-' + s.end_time;
-    }
-    
-    for (let day = 1; day <= dim; day++) {
-        const ds = `${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-        const dayData = empDays.find(d => d.date === ds);
-        const working = dayData ? dayData.working : false;
-        const bg = working ? '#d1fae5' : '#fee2e2';
-        const txt = working ? tr('admin.work_short') : tr('admin.off_short');
-        
-        // Get the time for this day's day-of-week
-        const dow = new Date(start.getFullYear(), start.getMonth(), day).getDay();
-        const jsDow = dow === 0 ? 6 : dow - 1; // convert to Mon=0
-        const timeStr = timeMap[jsDow] || '09:00-18:00';
-        
-        html += `<div style="background:${bg};border-radius:6px;text-align:center;padding:4px;font-size:0.8rem;cursor:pointer;"
-            onclick="editDayTime(${day}, '${ds}', ${dow})" id="cell-${ds}">
-            <div style="font-weight:600;">${day}</div>
-            <div>${txt}</div>
-            <div id="time-${ds}" style="font-size:0.65rem;color:var(--text-secondary);">${timeStr}</div>
-        </div>`;
-    }
-    
-    html += '</div>';
-    html += '<p style="text-align:center;margin:8px 0;font-size:0.8rem;color:var(--text-secondary);">' + tr('admin.adjust_schedule_hint') + '</p>';
-    
-    document.getElementById('schedule-month-view').innerHTML = html;
-}
-
-function editDayTime(day, dateStr, jsDow) {
-    const dow = jsDow === 0 ? 6 : jsDow - 1;
-    const sched = schedSchedules.find(s => s.day_of_week === dow);
-    const curStart = sched ? sched.start_time : '09:00';
-    const curEnd = sched ? sched.end_time : '18:00';
-    const timeEl = document.getElementById('time-' + dateStr);
-    if (!timeEl) return;
-    timeEl.innerHTML = `<input type="time" id="edit-start-${dateStr}" value="${curStart}" style="width:70px;padding:2px;border:1px solid var(--primary);border-radius:4px;font-size:0.7rem;">
-        ~
-        <input type="time" id="edit-end-${dateStr}" value="${curEnd}" style="width:70px;padding:2px;border:1px solid var(--primary);border-radius:4px;font-size:0.7rem;">
-        <button onclick="event.stopPropagation(); saveDayTime(${dow}, '${dateStr}')" style="padding:1px 8px;font-size:0.65rem;border:none;border-radius:4px;background:var(--primary);color:white;cursor:pointer;">✓</button>`;
-    setTimeout(() => {
-        const el = document.getElementById('edit-start-' + dateStr);
-        if (el) el.focus();
-    }, 50);
-}
-
-function saveDayTime(dow, dateStr) {
-    const startVal = document.getElementById('edit-start-' + dateStr);
-    const endVal = document.getElementById('edit-end-' + dateStr);
-    if (!startVal || !endVal) return;
-    const sv = startVal.value, ev = endVal.value;
-    if (!sv || !ev) return;
-    
-    const existing = schedSchedules.find(s => s.day_of_week === dow);
-    if (existing) { existing.start_time = sv; existing.end_time = ev; }
-    else { schedSchedules.push({day_of_week: dow, start_time: sv, end_time: ev, is_off: false}); }
-    
-    const timeEl = document.getElementById('time-' + dateStr);
-    if (timeEl) timeEl.textContent = sv + '-' + ev;
-    
-    const empDbId = document.getElementById('schedule-emp-id').value;
-    fetch('/api/employee/' + empDbId + '/schedules', {
-        method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({schedules: schedSchedules.map(s => ({
-            day_of_week: s.day_of_week, start_time: s.start_time,
-            end_time: s.end_time, is_off: false,
-        }))}),
-    })
-    .then(r => r.json())
-    .then(data => {
-        const btn = document.querySelector('#cell-' + dateStr + ' button');
-        if (btn) { btn.textContent = '✓'; btn.style.background = 'var(--success)'; }
-        if (!data.ok) console.error('Save failed', data);
-    })
-    .catch(err => console.error('Save error', err));
 }
 
 function closeSchedule() {

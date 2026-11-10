@@ -1,7 +1,5 @@
-import calendar
 from flask_sqlalchemy import SQLAlchemy
-from datetime import date, datetime, time, timedelta
-from dateutil import parser as dtparser
+from datetime import datetime
 
 db = SQLAlchemy()
 
@@ -63,71 +61,6 @@ class AttendanceRecord(db.Model):
 
     def __repr__(self):
         return f'<Attendance {self.employee_id} {self.date}>'
-
-
-# ── Helper functions ──────────────────────────────────────────────
-
-def get_schedule_for_day(employee_id, dt_date: date):
-    """Return the Schedule for a given employee on this weekday, or None."""
-    dow = dt_date.weekday()
-    return Schedule.query.filter_by(
-        employee_id=employee_id,
-        day_of_week=dow
-    ).first()
-
-
-def compute_working_hours(check_in: datetime, check_out: datetime,
-                          lunch_start='12:00', lunch_end='13:00'):
-    """Compute hours worked, subtracting lunch overlap."""
-    if not check_in or not check_out:
-        return None
-    total = (check_out - check_in).total_seconds() / 3600.0
-
-    ls = time(*[int(x) for x in lunch_start.split(':')])
-    le = time(*[int(x) for x in lunch_end.split(':')])
-    ci_time = check_in.time()
-    co_time = check_out.time()
-
-    if ci_time < le and co_time > ls:
-        lunch_start_dt = datetime.combine(check_in.date(), ls)
-        lunch_end_dt   = datetime.combine(check_out.date(), le)
-        overlap_start  = max(check_in, lunch_start_dt)
-        overlap_end    = min(check_out, lunch_end_dt)
-        if overlap_end > overlap_start:
-            lunch_hours = (overlap_end - overlap_start).total_seconds() / 3600.0
-            total -= lunch_hours
-    return round(total, 2)
-
-
-def compute_status(check_in, check_out, schedule, grace_minutes=30):
-    """Determine attendance status."""
-    if not schedule or schedule.is_off:
-        return 'absent', 0.0
-
-    st = dtparser.parse(schedule.start_time).time()
-    et = dtparser.parse(schedule.end_time).time()
-
-    late = False
-    early = False
-
-    if check_in:
-        grace_delta = timedelta(minutes=grace_minutes)
-        grace_limit = datetime.combine(check_in.date(), st) + grace_delta
-        if check_in > grace_limit:
-            late = True
-
-    if check_out:
-        co = check_out.time()
-        if co < et:
-            early = True
-
-    if late and early:
-        return 'both', None
-    if late:
-        return 'late', None
-    if early:
-        return 'early_leave', None
-    return 'normal', None
 
 
 # ── Scheduling models ────────────────────────────────────────────
