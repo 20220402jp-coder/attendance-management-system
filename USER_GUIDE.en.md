@@ -170,3 +170,21 @@ New installations start empty. Style previews use a demo employee. Some local de
 - **Attendance currently uses each employee's weekly working-hours table**, not the generated daily assignment table. Check weekly working hours and rest days after changing automatic assignments.
 - Defaults are a 12:00–13:00 lunch break and 30-minute late grace period. Missing timestamps prevent a complete hours calculation. Time spent after the scheduled end is not automatically approved overtime.
 - Full administrator accounts and permissions are not implemented. Local-only style management does not provide login protection for the entire Admin area.
+
+## 20. Changes after v1.0.4 (these replace the matching notes above)
+
+- **Never expose the system to the public internet.** It is for one shop or office network only. No port forwarding, tunnelling or cloud hosting.
+- **Admin opens only on the computer that runs the program.** Phones and other computers can clock in and submit availability, nothing else. There is no admin password, so protect that computer with a login password.
+- **Adding an employee needs only a name.** The employee ID is generated when left blank, and a four-digit personal code is shown right after saving. Three-digit codes from older versions keep working until reset.
+- **Regular employees default to Monday–Friday.** Part-time employees have no fixed days. Use "Weekly hours" next to an employee to tick working days and set times.
+- **Clocking is never blocked.** On a day without a shift the page says so, but the button still works; the time and hours are recorded without late or early flags.
+- **Expected days:** the generated schedule decides when it exists for that day; otherwise the weekly hours; otherwise it is a day off. Days before the employee was added never count as absences.
+- **After midnight:** a check-out before 05:00, or within an overnight shift such as 22:00–06:00, is recorded on the previous day.
+- **Wrong codes:** five wrong entries lock for one minute, doubling each time up to ten minutes.
+- **Leaving employees:** use "Mark as left". Records are kept and still appear in that month's report. Only employees without any record can be deleted.
+- **Admin home** shows who is in, who is missing today and who forgot to check out yesterday, with a "Fix" button. Clicking a row in Reports does the same.
+- **Reports** have a per-employee summary and two exports (summary and daily detail). Exported hours keep two decimals.
+- **Settings** now hold the attendance rules: default working hours, lunch deduction (can be switched off) and the late grace period. Late emails remain optional.
+- **Backups:** one automatic backup per day, plus one before upgrades and deletions, in the `backups` folder of the data directory. "Back up and download now" on the admin home gives you a copy to keep elsewhere.
+- **QR code:** if the computer's network address changes, the admin home shows a yellow warning; print the QR code again.
+- **Port:** if `5000` is taken, a nearby port is used; follow the address shown in the program window.

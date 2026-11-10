@@ -24,7 +24,7 @@ macOS:   ~/Library/Application Support/AttendanceSystem
 Linux:   ~/.local/share/attendance-system
 ```
 
-这里保存数据库、程序密钥和日志，不会随源代码上传或打进安装包。
+这里保存数据库、程序密钥、日志和 `backups/` 备份，不会随源代码上传或打进安装包。
 
 ## 测试
 
@@ -58,9 +58,24 @@ python build.py
 ## 主要文件
 
 - `attendance/app.py`：页面和主要功能
+- `attendance/rules.py`：考勤规则（应出勤判定、状态、工时），所有页面共用
+- `attendance/backup.py`：数据库备份
 - `attendance/models.py`：数据库结构
 - `attendance/database.py`：数据库升级
 - `attendance/templates/`：页面
 - `attendance/translations/`：中文、英语和日语文字
 - `attendance/static/`：样式和浏览器端文件
 - `.github/workflows/`：自动测试和打包
+
+## 访问范围
+
+`app.py` 的 `admin_is_local_only` 默认拒绝所有非本机请求，只有 `PUBLIC_EXACT` 和
+`PUBLIC_PREFIXES` 列出的打卡、报班地址对局域网开放。新增管理页面或接口时不需要额外处理；
+新增员工要用的地址时必须加进这两个列表，并在 `tests/test_admin_hardening.py` 里补上断言。
+
+## 提交规范
+
+- 从 `main` 拉分支（`fix/…`、`feat/…`、`docs/…`），通过 Pull Request 合并，不直接推送 `main`。
+- 提交信息使用 Conventional Commits：`fix(attendance): …`、`feat(admin): …`、`docs: …`。
+- 对使用者有影响的改动写进 `CHANGELOG.md` 的「未发布」一节。
+- 三种语言的翻译键必须一致（`tests/test_i18n.py` 会检查）。
