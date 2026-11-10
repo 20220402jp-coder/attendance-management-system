@@ -6,7 +6,7 @@ import sys
 def load_app(tmp_path, monkeypatch):
     monkeypatch.setenv('ATTENDANCE_DATA_DIR', str(tmp_path / 'data'))
     monkeypatch.setenv('ATTENDANCE_LOG_DIR', str(tmp_path / 'logs'))
-    for name in ('app', 'config', 'database', 'models'):
+    for name in ('app', 'config', 'database', 'models', 'rules', 'backup'):
         sys.modules.pop(name, None)
     return importlib.import_module('app')
 
@@ -90,7 +90,7 @@ def test_legacy_database_is_upgraded_without_losing_employees(tmp_path, monkeypa
     with sqlite3.connect(database) as connection:
         columns = {row[1] for row in connection.execute('PRAGMA table_info(employees)')}
         assert {'rest_days', 'min_rest_per_week'} <= columns
-        assert connection.execute('SELECT version FROM schema_version').fetchone()[0] == 3
+        assert connection.execute('SELECT version FROM schema_version').fetchone()[0] == 4
 
 
 def authorize_clock(client, eid):

@@ -1,135 +1,110 @@
 <h1 align="center">📖 Attendance System User Guide</h1>
 
-<h2 align="center"><a href="README.en.md">Back to the download page</a></h2>
+<h2 align="center"><a href="README.en.md">Back to downloads</a> ｜ <a href="USER_GUIDE.md">中文</a> ｜ <a href="USER_GUIDE.ja.md">日本語</a></h2>
 
-This guide explains each feature. For a new installation, complete the steps in order.
+For first-time use, sections 1 and 2 are all you need to start clocking. Read the rest when you need it.
 
-## 1. Windows: download, extract, start and stop
+## 1. Install and start
 
-1. Download the Windows ZIP from the v1.0.4 GitHub release page.
-2. Open Downloads, right-click the ZIP, choose “Extract All”, and click “Extract”.
-3. Open the new folder and double-click the `.exe` inside. Do not run it from the ZIP preview or copy only the executable.
-4. If Windows shows “Windows protected your PC”, confirm the file came from this release page, then choose “More info” → “Run anyway”.
-5. Wait for the browser to open, or enter `http://127.0.0.1:5000/` manually. Keep the black program window open; close it to stop the system.
+Download the package for your computer from the [download page](README.en.md), **extract it first**, then run the program inside. Nothing else needs to be installed.
 
-## 2. macOS: download, extract, start and stop
+- **Windows:** right-click the zip file, choose "Extract All", open the extracted folder and double-click the `.exe`.
+- **macOS:** double-click the zip file, open the new folder, right-click the program and choose "Open".
+- **Linux:** after extracting, run `chmod +x AttendanceSystem-*` and `./AttendanceSystem-*` in a terminal.
 
-1. Choose macOS-arm64 for Apple silicon or macOS-x64 for Intel from the v1.0.4 release page.
-2. Double-click the ZIP, open the extracted folder, and run the program inside.
-3. If macOS blocks it, right-click and choose “Open”. If it remains blocked, use “System Settings → Privacy & Security → Open Anyway”, then right-click “Open” once more.
-4. If macOS says there is no application to open it, use the Terminal method in section 16. Keep Terminal open while the system runs.
+A program window appears and the browser opens by itself. The window shows the address on this computer (usually `http://127.0.0.1:5000`); type it into the browser if it did not open.
 
-## 3. Linux: download, extract, start and stop
+**Keep the program window open.** Closing it stops the system; closing only the browser does not. Employees, schedules and clock records are saved automatically and are still there next time.
 
-1. Download the Linux-x64 ZIP from the v1.0.4 release page.
-2. Choose “Extract Here”, open the extracted folder, and run in a terminal:
+If your computer shows a security prompt on first run, see section 13.
 
-```bash
-chmod +x AttendanceSystem-*-Linux-x64
-./AttendanceSystem-*-Linux-x64
-```
+## 2. First-time setup
 
-3. Open `http://127.0.0.1:5000/` if the browser does not open automatically. Press `Ctrl+C` in the terminal to stop the system.
+1. On the computer running the program, open Admin: `http://127.0.0.1:5000/admin/`
+2. Go to "Employee management", click "Add employee", enter a name and save.
+3. The page then shows that employee's **four-digit personal code**. Give it to the employee.
+4. Back on the Admin home page, click "Clock-in QR code", print it and put it up in the workplace.
 
-Employees, schedules and clock records are saved automatically. The downloads already include the required runtime.
+After these four steps, employees can clock in.
 
-## 4. First-time setup
+## 3. How employees clock in
 
-1. On the GitHub v1.0.4 release page, download the ZIP matching your operating system and processor: Windows, macOS Apple silicon, macOS Intel, or Linux.
-2. Extract it: right-click and choose “Extract All” on Windows, double-click the ZIP on macOS, or choose “Extract Here” on Linux. Open the new folder and run the program inside. Do not run it from the ZIP preview or copy only the executable.
-3. Open `http://127.0.0.1:5000/admin/`.
-2. Open “Employee Management”.
-3. Add employees.
-4. Set their work hours.
-5. Create a schedule if needed.
+1. Scan the QR code with a phone, or open the clock page on a shared computer or tablet at work.
+2. Enter your personal code.
+3. Tap "Check in" when you start and "Check out" when you finish.
+4. Tap "Exit / Next person", or wait for the page to exit by itself.
 
-## 5. Employee management
+Good to know:
 
-Open “Admin → Employee Management” to add, edit or delete employees. You can enter an employee ID, name, role or department, and preferred language. Use the schedule button beside an employee to set their working hours.
+- The phone must be on the same Wi-Fi as the computer running the program.
+- The clock page shows only you, never other employees.
+- You can clock in on a day without a shift; the time is recorded as usual.
+- Five wrong codes in a row lock the entry for one minute, longer if it keeps happening (ten minutes at most).
+- Finishing after midnight: a check-out before 5 a.m. is recorded on the previous day.
 
-Check carefully before deleting an employee. A deleted employee can no longer clock in or out.
+## 4. Employee management
 
-## 6. Check in and out
+Open "Admin → Employee management".
 
-1. Select your name on the clock page.
-2. Click “Check In” when work starts.
-3. Click “Check Out” when work ends.
+**Add an employee:** only the name is required. Choose "Regular employee" or "Part-time". Department and employee ID are optional; the ID is generated automatically.
 
-If several people clock at once, wait while the system processes them in order. After check-out, working time and attendance status are calculated automatically.
+- Regular employees work Monday to Friday by default.
+- Part-time employees have no fixed days; they follow the generated schedule or simply their clock records.
 
-## 7. Submit preferred work dates
+**Weekly hours:** click "Weekly hours" next to an employee, tick the working days and set the times. A night shift can be entered as 22:00 to 06:00.
 
-Open the availability page, select your name, and choose “Work”, “Off” or “Either” for each date. Save your choices when finished.
+**Personal code:** if an employee forgets their code, click "Issue / reset personal code" and give them the new one. The old code stops working. Three-digit codes from older versions keep working until they are reset.
 
-## 8. Create a schedule
+**Leaving:** click "Mark as left". The person can no longer clock in, all records are kept, and they still appear in that month's report. Only an employee with no attendance records (for example one added by mistake) can be deleted.
 
-Open “Admin → Automatic Scheduling”, set the number of people needed each day, generate the schedule, check the result, and adjust it if necessary. The schedule is used to determine lateness, early departure and absence.
+## 5. Corrections and leave
 
-## 9. Correct or add a clock record
+"Today's attendance" on the Admin home page lists who is in, who has not arrived, and who forgot to check out yesterday. Click "Fix" on a row to correct it directly.
 
-Open “Admin → Correct Clock Records”, select an employee and date, search for the record, edit the check-in or check-out time, and save. Entering times for an empty date creates a new record.
+You can also open "Correct clock records", choose the employee and date, then:
 
-## 10. Record leave
+- **Add or change times:** enter the check-in and check-out times and click "Save".
+- **Leave:** tick "Mark as leave" and click "Save". Leave does not count as an absence.
 
-Open the clock correction page, select the employee and date, choose “Mark as leave”, and save. Leave appears in reports but is not counted as absence.
+## 6. Reports and export
 
-## 11. View attendance reports
+Open "Attendance reports", choose the dates (or click "This month" / "Last month") and click "Search".
 
-Open “Admin → Attendance Reports”, select an employee and date range, and run the report. It shows attendance, scheduled days, hours, lateness, early departures, absences and leave. You can export the result as a table file.
+- **Summary by employee:** one row per person with scheduled days, days worked, total hours, and the number of times late, left early, absent, on leave and without a check-out.
+- **Daily detail:** one row per day. Click any row to correct that day.
+- **Export:** "Export summary" gives one row per person, which suits payroll; "Export detail" gives one row per day. Both files open in Excel.
 
-## 12. Use a phone for clocking
+## 7. Availability and automatic scheduling (optional)
 
-Connect the computer and phone to the same network. Open “Clock-in QR Code” on the admin page and scan it with the phone. Use the print function if you want to display a printed QR code.
+If you do not need rosters, skip this section; "Weekly hours" is enough.
 
-## 13. Set up late email notices
+**Employees submit availability:** open "Availability" at the top of the clock page, choose your name, enter your personal code, mark each day of next month as "Work", "Off" or "Either", and save.
 
-Open “Admin → Email Settings” and enter the mail server, port, sending account, app password, administrator email and reminder delay. Email setup is optional and does not affect other features.
+**The administrator builds the schedule:** open "Automatic scheduling", set the minimum number of people per day, click "Generate schedule", check the result, adjust by hand if needed and save.
 
-## 14. Change the display language
+Once a schedule exists, **it decides whether that day is a working day**. Days without a schedule still follow the weekly hours.
 
-Use the Chinese, English or Japanese switch at the top of any administration page. The system remembers the selected language.
+## 8. Settings
 
-## 15. How attendance is calculated
+Open "Admin → Settings".
 
-- Working time is check-out minus check-in, less any overlapping lunch break.
-- Arriving after the scheduled start and grace period is late.
-- Leaving before the scheduled end is an early departure.
-- A scheduled day without a clock record is an absence.
-- Approved leave is not counted as absence.
-- A record with no check-out is shown as incomplete.
+**Attendance rules**
 
-## 16. Common problems
+- Default working hours: used when a regular employee is added.
+- Lunch break: by default 12:00 to 13:00 is not counted as working time. Untick it if you do not deduct lunch.
+- Late grace period: 30 minutes by default. Clocking in within this time after the start is not late.
 
-### The page does not open automatically
+**Late-arrival email (optional)**
 
-Wait a few seconds, then enter `http://127.0.0.1:5000` in the browser.
+Enter the sending mailbox's server, port, account, app password and the address that should receive notices. When an employee is later than the set number of minutes, the administrator gets an email. The app password is created in the mailbox's own settings; the steps differ between email providers.
 
-### An employee is missing from the clock page
+It is fine to leave this empty. The Admin home page also shows who has not arrived today.
 
-Confirm that the employee was added successfully, then refresh the clock page.
+## 9. Clock page styles
 
-### The page says the system is already running
+Open "Page styles". There are 12 to choose from. Click "Preview · Try clocking" to see one (a preview records nothing), then "Apply" when you like it. "Restore previous style" switches back.
 
-The program is already open. Find its program window and open `http://127.0.0.1:5000` in the browser.
-
-### A report shows an absence unexpectedly
-
-Check the schedule and the employee’s clock record. Correct the record if necessary.
-
-### An employee forgot to check out
-
-An administrator can add the check-out time on the clock correction page.
-
-## 17. Choose a clock design (current source)
-
-On the host computer, open `http://127.0.0.1:5000/admin/appearance`, or choose “Page styles” in Admin.
-
-1. Select “Preview · Try clocking”, choose the demo employee and try the success animation. Preview does not change the global style or save attendance.
-2. Return to Admin and select “Apply”. The selected design shows “Active” and applies to the whole system, not an individual employee.
-3. “Restore previous style” restores only the design, not attendance data.
-4. Switch Chinese, English or Japanese at the top. Names, descriptions, buttons, messages and previews follow that language.
-
-| Design | Success animation |
+| Style | Success animation |
 | --- | --- |
 | Original Classic | Confirmation sparkles |
 | Neon Sci-Fi | Energy ring confirmation |
@@ -142,31 +117,67 @@ On the host computer, open `http://127.0.0.1:5000/admin/appearance`, or choose �
 | Pixel Arcade | Bouncing coin |
 | Candy Bubbles | Confetti burst |
 | Minimal Monochrome | Drawing a checkmark |
+| Tiny Planet | Starburst rings |
 
-The clock URL and QR code stay the same. New visits use the current design. Existing idle pages check about every 8 seconds, preload resources, then refresh while preserving employee selection and rechecking today's server state. Switching waits during submission, uncertain results or an open success dialog. This is a refresh at a safe point, not an instant in-place theme change.
+Changing the style does not change the clock address, the QR code or any attendance record. Pages that employees already have open switch to the new style within a few seconds.
 
-Live success animations play only after server confirmation. Closing or replaying an animation does not submit another clock event. Wait while a disconnected request is being verified. The page falls back if 3D resources fail and supports reduced motion.
+## 10. Language
 
-Refresh Admin if the page expires or another window changes the style. Phones can use the chosen clock design, but style management is restricted to the host computer.
+Choose 中文, English or 日本語 at the top of any Admin page. For the clock page, choose the language below the personal-code keypad.
 
-## 18. Data, backups and demo records
+## 11. Backup and restore
 
-| System | Default data directory |
+The system makes a backup every day, and also before an upgrade or before an employee is deleted. Backups are in the `backups` folder inside the data folder:
+
+| System | Data folder |
 | --- | --- |
 | Windows | `%LOCALAPPDATA%\AttendanceSystem` |
 | macOS | `~/Library/Application Support/AttendanceSystem` |
 | Linux | `~/.local/share/attendance-system` |
 
-This directory contains `attendance.db`, the application secret and logs. `ATTENDANCE_DATA_DIR`, when set, overrides this location.
+Automatic backups are on the same computer as the data, so both are lost if the computer fails. About once a month, click "Back up and download now" on the Admin home page and keep the file on a USB drive or cloud storage.
 
-Stop the app before copying the entire data directory for backup. Before restoring, back up the current directory, restore a backup for the same app version while stopped, then restart. A source-code backup does not include runtime data. Keep the database and secret private and out of public repositories.
+**Restore:** close the program, rename `attendance.db` in the data folder to keep it, copy the backup file in and rename it to `attendance.db`, then start the program.
 
-New installations start empty. Style previews use a demo employee. Some local demo environments also contain historical records labelled “模拟” (simulated); these are not actual attendance and are not included in GitHub source or downloads. Keep demo departments separate when reviewing reports. There is no user-facing one-click two-month data generator.
+## 12. How attendance is calculated
 
-## 19. Addresses and schedule rules
+- **Working days:** the generated schedule decides if there is one for that day; otherwise the weekly hours; otherwise it is a day off. Days before the employee was added do not count.
+- **Hours:** check-out time minus check-in time, minus the lunch break.
+- **Late:** checked in after the start time plus the grace period.
+- **Left early:** checked out before the end time.
+- **Absent:** a working day without any clock record.
+- **No check-out:** checked in but not out. It shows "At work" on the day and "No check-out" from the next day; add the check-out time to fix it.
+- **Leave:** not counted as an absence.
+- **Clocking on a day off:** the time and hours are recorded; late and early are not judged.
 
-- Admin is `http://127.0.0.1:5000/admin/`. Normal startup and local shortcuts use `5000`, not the early demo port `5077`. Closing a browser tab does not stop the app; closing its program window does.
-- On a phone, `127.0.0.1` means the phone itself. Use the QR code or the host computer's LAN IP with port `5000`; keep the host running and allow access through its firewall.
-- **Attendance currently uses each employee's weekly working-hours table**, not the generated daily assignment table. Check weekly working hours and rest days after changing automatic assignments.
-- Defaults are a 12:00–13:00 lunch break and 30-minute late grace period. Missing timestamps prevent a complete hours calculation. Time spent after the scheduled end is not automatically approved overtime.
-- Full administrator accounts and permissions are not implemented. Local-only style management does not provide login protection for the entire Admin area.
+## 13. Common questions
+
+**Windows shows "Windows protected your PC"**
+The program has no code-signing certificate, so Windows shows this prompt. Click "More info", then "Run anyway".
+
+**Nothing happens when double-clicking on Windows**
+Make sure you are running the program from the extracted folder, not from inside the zip file. If it still does not start, right-click the program, choose "Properties", tick "Unblock" at the bottom and try again.
+
+**macOS says the developer cannot be verified, or the program will not open**
+Right-click the program and choose "Open". If it is still blocked, go to "System Settings → Privacy & Security", click "Open Anyway", then right-click and "Open" once more.
+
+**macOS says there is no application to open the file**
+Open "Terminal", type `chmod +x ` (with a space at the end), drag the program into the Terminal window and press Return. Then drag the program into the window again and press Return. Keep the Terminal window open.
+
+**The phone cannot open the page after scanning**
+Check that the phone and the computer are on the same Wi-Fi and that the computer is on and not asleep. If the Admin home page shows a yellow notice that the network address has changed, print the QR code again. If the address changes often, ask whoever set up your network to give this computer a fixed address.
+
+**The report shows an absence that should not be there**
+Check whether that day is in the schedule, or ticked in the weekly hours. If the person did work but did not clock, add the record in "Correct clock records".
+
+**A message says the system is already running**
+The program is already open. Just open the address in your browser.
+
+**The address is not 5000**
+If another program is using 5000, the system picks another port. Use the address shown in the program window.
+
+## 14. Where it can be used
+
+- **Clocking in over the public internet is strictly forbidden.** Use the system only on the network inside your shop or office, and do not open it to the outside (port forwarding, tunnelling, hosting it in the cloud and so on). It is designed for in-store use; once it is reachable from outside, others could clock in as your staff or see employee information.
+- **Admin opens only on the computer that runs the program.** There is no administrator password, so it is a good idea to set a login password on that computer.
+- Clock records missed while away from the workplace are added by the administrator in Admin.

@@ -54,7 +54,6 @@ def test_employee_delete_removes_related_rows(tmp_path, monkeypatch):
         models.db.session.add_all([
             models.SchedulePreference(employee_id=employee_id, date=app.date(2026, 10, 1), preference='flexible'),
             models.ScheduleAssignment(employee_id=employee_id, date=app.date(2026, 10, 1), is_working=True),
-            models.ScheduleAccess(employee_id=employee_id, code_hash='unused'),
         ])
         models.db.session.commit()
     response = c.delete(f'/api/employee/{employee_id}')
@@ -63,3 +62,4 @@ def test_employee_delete_removes_related_rows(tmp_path, monkeypatch):
         assert models.db.session.get(models.Employee, employee_id) is None
         assert models.SchedulePreference.query.filter_by(employee_id=employee_id).count() == 0
         assert models.ScheduleAssignment.query.filter_by(employee_id=employee_id).count() == 0
+        assert models.ScheduleAccess.query.filter_by(employee_id=employee_id).count() == 0

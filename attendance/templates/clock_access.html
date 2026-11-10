@@ -8,7 +8,7 @@
 <section class="personal-entry">
 <h1>{{ _('clock_access.title') }}</h1>
 <p>{{ _('clock_access.enter') }}</p>
-<input id="personal-code" type="password" maxlength="3" inputmode="none" autocomplete="off" aria-label="{{ _('clock_access.enter') }}">
+<input id="personal-code" type="password" maxlength="4" inputmode="none" autocomplete="off" aria-label="{{ _('clock_access.enter') }}">
 <div class="personal-pad">
 {% for n in [1,2,3,4,5,6,7,8,9] %}<button type="button" data-digit="{{ n }}">{{ n }}</button>{% endfor %}
 <button type="button" class="word" id="clear-code">{{ _('access.clear') }}</button><button type="button" data-digit="0">0</button><button type="button" class="word" id="erase-code">{{ _('access.erase') }}</button>
@@ -20,13 +20,13 @@
 </section>
 <script>
 const input=document.getElementById('personal-code'),enter=document.getElementById('enter-clock'),error=document.getElementById('entry-error');let busy=false;
-function update(){input.value=input.value.replace(/[^0-9]/g,'').slice(0,3);enter.disabled=busy||input.value.length!==3;}
+function update(){input.value=input.value.replace(/[^0-9]/g,'').slice(0,4);enter.disabled=busy||input.value.length<3;}
 input.addEventListener('input',update);
-document.querySelectorAll('[data-digit]').forEach(button=>button.addEventListener('click',()=>{if(!busy){input.value=(input.value+button.dataset.digit).slice(0,3);update();}}));
+document.querySelectorAll('[data-digit]').forEach(button=>button.addEventListener('click',()=>{if(!busy){input.value=(input.value+button.dataset.digit).slice(0,4);update();}}));
 document.getElementById('clear-code').onclick=()=>{if(!busy){input.value='';update();}};
 document.getElementById('erase-code').onclick=()=>{if(!busy){input.value=input.value.slice(0,-1);update();}};
-document.addEventListener('keydown',event=>{if(busy)return;if(event.key==='Enter'){event.preventDefault();enter.click();}else if(event.target!==input && /^[0-9]$/.test(event.key)){input.value=(input.value+event.key).slice(0,3);update();}});
-enter.onclick=async()=>{if(busy||input.value.length!==3)return;busy=true;update();error.textContent='';try{
+document.addEventListener('keydown',event=>{if(busy)return;if(event.key==='Enter'){event.preventDefault();enter.click();}else if(event.target!==input && /^[0-9]$/.test(event.key)){input.value=(input.value+event.key).slice(0,4);update();}});
+enter.onclick=async()=>{if(busy||input.value.length<3)return;busy=true;update();error.textContent='';try{
 const response=await fetch('/api/clock/access/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:input.value})});
 const data=await response.json();if(!response.ok||!data.ok)throw new Error(data.msg||tr('access.failed'));
 location.replace('/?lang='+{{ current_lang|tojson }});
