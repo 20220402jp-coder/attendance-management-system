@@ -4,6 +4,10 @@ on:
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 要补传下载包的已有版本标签，例如 v1.1.0（留空则只打包、不发布）
+        required: false
 
 permissions:
   contents: write
@@ -45,7 +49,7 @@ jobs:
           if-no-files-found: error
 
   publish:
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') || inputs.tag != ''
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -56,4 +60,6 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           files: release/*.zip
-          generate_release_notes: true
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          # 补传时不改动已写好的版本说明
+          generate_release_notes: ${{ inputs.tag == '' }}

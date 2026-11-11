@@ -77,9 +77,11 @@ def check_database(data_dir):
 
     if employee_count != 0 or record_count != 0:
         raise RuntimeError('新数据库中出现了测试员工或打卡记录')
-    if set(settings) != EXPECTED_EMPTY_SETTINGS:
-        raise RuntimeError(f'邮件配置项目不完整: {settings}')
-    if any(settings.values()):
+    # 设置表里还会有程序自己记录的项目（例如上次使用的端口），只检查邮件配置。
+    missing = EXPECTED_EMPTY_SETTINGS - set(settings)
+    if missing:
+        raise RuntimeError(f'邮件配置项目不完整，缺少: {sorted(missing)}')
+    if any(settings[key] for key in EXPECTED_EMPTY_SETTINGS):
         raise RuntimeError('新数据库中的邮件配置不是空的')
 
 
